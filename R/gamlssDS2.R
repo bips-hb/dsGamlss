@@ -481,6 +481,39 @@ gamlssDS <- function(formula = formula,
     out
   } # end of parameterOut function
   
+  #**************************************************************************
+  #II) Mu: Create modelframe----  
+  #**************************************************************************
+  
+  #To DO: figure out where & how to include this
+  ## Check for NA in the data 
+  #if(!missing(data)){
+  # if (any(is.na(data))){
+  #   stop("The data contains NA's, use data = na.omit(mydata)")
+  # }  
+  #}  
+  
+  ## Evaluate the model frame for mu
+  mnames <- c("", "formula", "data")  # relevant names that should be extracted from the calls
+  cnames <- names(gamlsscall)  # get the names of the arguments of the call (first element "")
+  cnames <- cnames[match(mnames,cnames,0)]  # keep only the ones that match with mnames
+  mcall <- gamlsscall[cnames]  # get in mcall all the relevant information but remember that the first element
+  # (function name) will be NULL
+  mcall[[1]] <- as.name("model.frame")  # replace NULL with model.frame (to be able to execute model.frame 
+  # function later)
+  
+  ## Specials for smoothing
+  # add specials attribute for smoothing to formula object
+  mcall$formula <- terms(formula, specials=.gamlss.sm.list, data=data)
+  
+  mu.frame <- eval(mcall, sys.parent())  # calls the model.frame function inside mcall to create the 
+  # modelframe with the variables needed to use formula
+  # also uses pb() function to create model frame for smoothing
+  
+  ## This part deals with the family 
+  family <- as.gamlss.family(family)  # bring first the gamlss family
+  G.dev.expr <- body(family$G.dev.inc)  # expression to calculate deviance increment for family 
+  
   
   #**************************************************************************
   #III) Checks ----

@@ -1,5 +1,5 @@
 #'
-#' @title gamlssDS1 an assign function called by ds.galmss
+#' @title gamlssDS1 an aggregate function called by ds.gamlss
 #' @description This function calls the gamlssDS1 that sets up the model frame 
 #' on the server side and performs some checks on the data.
 #' @details For additional details please see the extensive header of ds.gamlss and also
@@ -20,8 +20,8 @@
 #' supported by gamlss() can be found in gamlss.family. Functions such as BI() 
 #' (binomial) produce a family object. Also can be given without the parentheses
 #' i.e. BI. Family functions can take arguments, as in BI(mu.link=probit).
-#' @param data a data frame containing the variables occurring in the formula. 
-#' If this is missing, the variables should be on the parent environment.
+#' @param data an optional character string specifying a data.frame object holding 
+#' the data to be analysed under the specified model 
 #' @param mu.fix logical, indicate whether the mu parameter should be kept fixed
 #' in the fitting processes.
 #' @param sigma.fix logical, indicate whether the sigma parameter should be kept
@@ -68,36 +68,47 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   thr <- dsBase::listDisclosureSettingsDS()
   nfilter.tab <- as.numeric(thr$nfilter.tab)
   
-  data <- eval(parse(text = data), envir = parent.frame())
+  errorMessage <- "No errors"
+  
+  ## Get the value of the 'data' parameter provided as character on the client side
+  if(is.null(data)){
+    dataTable <- NULL 
+  }else{
+    dataTable <- eval(parse(text=data), envir = parent.frame())
+  }
   
   ## Reconvert the special symbols to create the appropriate formula & gamlss.family objects
-  formula <- gsub("left_parenthesis", "(", formula, fixed = TRUE)
-  formula <- gsub("right_parenthesis", ")", formula, fixed = TRUE)
-  formula <- gsub("tilde_symbol", "~", formula, fixed = TRUE)
-  formula <- gsub("equal_symbol", "=", formula, fixed = TRUE)
-  formula <- gsub("comma_symbol", ",", formula, fixed = TRUE)
-  formula <- stats::as.formula(formula)
+  formulatext <- gsub("left_parenthesis", "(", formula, fixed = TRUE)
+  formulatext <- gsub("right_parenthesis", ")", formulatext, fixed = TRUE)
+  formulatext <- gsub("tilde_symbol", "~", formulatext, fixed = TRUE)
+  formulatext <- gsub("equal_symbol", "=", formulatext, fixed = TRUE)
+  formulatext <- gsub("comma_symbol", ",", formulatext, fixed = TRUE)
+  formula <- stats::as.formula(formulatext)
+  formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(formula))), env = parent.frame()) # here we need the formula as a 'call' object
   
-  sigma.formula <- gsub("left_parenthesis", "(", sigma.formula, fixed = TRUE)
-  sigma.formula <- gsub("right_parenthesis", ")", sigma.formula, fixed = TRUE)
-  sigma.formula <- gsub("tilde_symbol", "~", sigma.formula, fixed = TRUE)
-  sigma.formula <- gsub("equal_symbol", "=", sigma.formula, fixed = TRUE)
-  sigma.formula <- gsub("comma_symbol", ",", sigma.formula, fixed = TRUE)
-  sigma.formula <- stats::as.formula(sigma.formula)
+  sigma.formulatext <- gsub("left_parenthesis", "(", sigma.formula, fixed = TRUE)
+  sigma.formulatext <- gsub("right_parenthesis", ")", sigma.formulatext, fixed = TRUE)
+  sigma.formulatext <- gsub("tilde_symbol", "~", sigma.formulatext, fixed = TRUE)
+  sigma.formulatext <- gsub("equal_symbol", "=", sigma.formulatext, fixed = TRUE)
+  sigma.formulatext <- gsub("comma_symbol", ",", sigma.formulatext, fixed = TRUE)
+  sigma.formula <- stats::as.formula(sigma.formulatext)
+  sigma.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(sigma.formula))), env = parent.frame()) # here we need the formula as a 'call' object
   
-  nu.formula <- gsub("left_parenthesis", "(", nu.formula, fixed = TRUE)
-  nu.formula <- gsub("right_parenthesis", ")", nu.formula, fixed = TRUE)
-  nu.formula <- gsub("tilde_symbol", "~", nu.formula, fixed = TRUE)
-  nu.formula <- gsub("equal_symbol", "=", nu.formula, fixed = TRUE)
-  nu.formula <- gsub("comma_symbol", ",", nu.formula, fixed = TRUE)
-  nu.formula <- stats::as.formula(nu.formula)
+  nu.formulatext <- gsub("left_parenthesis", "(", nu.formula, fixed = TRUE)
+  nu.formulatext <- gsub("right_parenthesis", ")", nu.formulatext, fixed = TRUE)
+  nu.formulatext <- gsub("tilde_symbol", "~", nu.formulatext, fixed = TRUE)
+  nu.formulatext <- gsub("equal_symbol", "=", nu.formulatext, fixed = TRUE)
+  nu.formulatext <- gsub("comma_symbol", ",", nu.formulatext, fixed = TRUE)
+  nu.formula <- stats::as.formula(nu.formulatext)
+  nu.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(nu.formula))), env = parent.frame()) # here we need the formula as a 'call' object
   
-  tau.formula <- gsub("left_parenthesis", "(", tau.formula, fixed = TRUE)
-  tau.formula <- gsub("right_parenthesis", ")", tau.formula, fixed = TRUE)
-  tau.formula <- gsub("tilde_symbol", "~", tau.formula, fixed = TRUE)
-  tau.formula <- gsub("equal_symbol", "=", tau.formula, fixed = TRUE)
-  tau.formula <- gsub("comma_symbol", ",", tau.formula, fixed = TRUE)
-  tau.formula <- stats::as.formula(tau.formula)
+  tau.formulatext <- gsub("left_parenthesis", "(", tau.formula, fixed = TRUE)
+  tau.formulatext <- gsub("right_parenthesis", ")", tau.formulatext, fixed = TRUE)
+  tau.formulatext <- gsub("tilde_symbol", "~", tau.formulatext, fixed = TRUE)
+  tau.formulatext <- gsub("equal_symbol", "=", tau.formulatext, fixed = TRUE)
+  tau.formulatext <- gsub("comma_symbol", ",", tau.formulatext, fixed = TRUE)
+  tau.formula <- stats::as.formula(tau.formulatext)
+  tau.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(tau.formula))), env = parent.frame()) # here we need the formula as a 'call' object
   
   family <- gsub("left_parenthesis", "(", family, fixed = TRUE)
   family <- gsub("right_parenthesis", ")", family, fixed = TRUE)
@@ -105,39 +116,8 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   family <- gsub("comma_symbol", ",", family, fixed = TRUE)
   family <- gamlss.dist::as.family(eval(parse(text=family)))
   
-  #**************************************************************************
-  #I) Mu: Create modelframe----  
-  #**************************************************************************
-  
-  ## Save call to transfer parameters to model.frame function
-  gamlsscall <- match.call()  # the function call with arguments specified by full names
-  
-  ## Check for NA in the data 
-  if(!missing(data)){
-   if (any(is.na(data))){
-     stop("The data contains NA's, use data = na.omit(mydata)")
-   }  
-  }  
-  
-  ## Evaluate the model frame for mu
-  mnames <- c("", "formula", "data")  # relevant names that should be extracted from the calls
-  cnames <- names(gamlsscall)  # get the names of the arguments of the call (first element "")
-  cnames <- cnames[match(mnames,cnames,0)]  # keep only the ones that match with mnames
-  mcall <- gamlsscall[cnames]  # get in mcall all the relevant information but remember that the first element
-  # (function name) will be NULL
-  mcall[[1]] <- as.name("model.frame")  # replace NULL with model.frame (to be able to execute model.frame 
-  # function later)
-  
-  ## Specials for smoothing
-  # add specials attribute for smoothing to formula object
-  mcall$formula <- terms(formula, specials=.gamlss.sm.list, data=data)
-  
-  mu.frame <- eval(mcall, sys.parent())  # calls the model.frame function inside mcall to create the 
-  # modelframe with the variables needed to use formula
-  # also uses pb() function to create model frame for smoothing
-  
-  ## This part deals with the family 
-  family <- as.gamlss.family(family)  # bring first the gamlss family
-  G.dev.expr <- body(family$G.dev.inc)  # expression to calculate deviance increment for family 
+  return(list(errorMessage=errorMessage))
   
 }
+#AGGREGATE FUNCTION
+# gamlssDS1
