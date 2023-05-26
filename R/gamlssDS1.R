@@ -61,7 +61,8 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   
   
   #**************************************************************************
-  #I) Preparation ----  
+  #I) Preparation ---- 
+  # Reconvert the transfer strings into required variable types
   #**************************************************************************
   
   ## Capture the nfilter settings
@@ -84,7 +85,8 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   formulatext <- gsub("equal_symbol", "=", formulatext, fixed = TRUE)
   formulatext <- gsub("comma_symbol", ",", formulatext, fixed = TRUE)
   formula <- stats::as.formula(formulatext)
-  formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(formula))), env = parent.frame()) # here we need the formula as a 'call' object
+  #To Do: check whether formula2use is needed
+  #formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(formula))), env = parent.frame()) # here we need the formula as a 'call' object
   
   sigma.formulatext <- gsub("left_parenthesis", "(", sigma.formula, fixed = TRUE)
   sigma.formulatext <- gsub("right_parenthesis", ")", sigma.formulatext, fixed = TRUE)
@@ -92,7 +94,8 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   sigma.formulatext <- gsub("equal_symbol", "=", sigma.formulatext, fixed = TRUE)
   sigma.formulatext <- gsub("comma_symbol", ",", sigma.formulatext, fixed = TRUE)
   sigma.formula <- stats::as.formula(sigma.formulatext)
-  sigma.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(sigma.formula))), env = parent.frame()) # here we need the formula as a 'call' object
+  #To Do: check whether formula2use is needed
+  #sigma.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(sigma.formula))), env = parent.frame()) # here we need the formula as a 'call' object
   
   nu.formulatext <- gsub("left_parenthesis", "(", nu.formula, fixed = TRUE)
   nu.formulatext <- gsub("right_parenthesis", ")", nu.formulatext, fixed = TRUE)
@@ -100,7 +103,8 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   nu.formulatext <- gsub("equal_symbol", "=", nu.formulatext, fixed = TRUE)
   nu.formulatext <- gsub("comma_symbol", ",", nu.formulatext, fixed = TRUE)
   nu.formula <- stats::as.formula(nu.formulatext)
-  nu.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(nu.formula))), env = parent.frame()) # here we need the formula as a 'call' object
+  #To Do: check whether formula2use is needed
+  #nu.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(nu.formula))), env = parent.frame()) # here we need the formula as a 'call' object
   
   tau.formulatext <- gsub("left_parenthesis", "(", tau.formula, fixed = TRUE)
   tau.formulatext <- gsub("right_parenthesis", ")", tau.formulatext, fixed = TRUE)
@@ -108,7 +112,8 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   tau.formulatext <- gsub("equal_symbol", "=", tau.formulatext, fixed = TRUE)
   tau.formulatext <- gsub("comma_symbol", ",", tau.formulatext, fixed = TRUE)
   tau.formula <- stats::as.formula(tau.formulatext)
-  tau.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(tau.formula))), env = parent.frame()) # here we need the formula as a 'call' object
+  #To Do: check whether formula2use is needed
+  #tau.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(tau.formula))), env = parent.frame()) # here we need the formula as a 'call' object
   
   family <- gsub("left_parenthesis", "(", family, fixed = TRUE)
   family <- gsub("right_parenthesis", ")", family, fixed = TRUE)
@@ -116,7 +121,43 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   family <- gsub("comma_symbol", ",", family, fixed = TRUE)
   family <- gamlss.dist::as.family(eval(parse(text=family)))
   
-  return(list(errorMessage=errorMessage))
+  c1 <- as.numeric(unlist(strsplit(control, split=",")))
+  c2 <- as.numeric(unlist(strsplit(i.control, split=",")))
+  
+  ## Perform the first outer iteration of gamlss (to get the desired design matrices and the y.vector)
+  # to increase computational speed the number of inner and backfitting iterations are set to 1
+  mod.gamlss.ds <- gamlss::gamlss(formula=formula, sigma.formula=sigma.formula, 
+                                  nu.formula=nu.formula, tau.formula=tau.formula,
+                                  family=family, data=dataTable, method=RS(),
+                                  mu.fix=mu.fix, sigma.fix=sigma.fix, nu.fix=nu.fix,
+                                  tau.fix=tau.fix,
+                                  control = gamlss.control(c.crit=c1[1], n.cyc=1, 
+                                                           mu.step=c1[3], sigma.step=c1[4], 
+                                                           nu.step=c1[5], tau.step=c1[6],
+                                                           gd.tol=c1[7]),
+                                  i.control = glim.control(cc=c2[1], cyc=1, 
+                                                           bf.cyc=1, bf.tol=c2[4]))
+  
+  mu.x <- mod.gamlss.ds$mu.x
+  sigma.x <- mod.gamlss.ds$sigma.x
+  nu.x <- mod.gamlss.ds$nu.x
+  tau.x <- mod.gamlss.ds$tau.x
+  
+  dim.mu.x <- dim(mu.x)
+  dim.sigma.x <- dim(sigma.x)
+  dim.nu.x <- dim(nu.x)
+  dim.tau.x <- dim(tau.x)
+  
+  mu.coef.names <- names(mod.gamlss.ds$mu.coefficients)
+  sigma.coef.names <- names(mod.gamlss.ds$sigma.coefficients)
+  nu.coef.names <- names(mod.gamlss.ds$nu.coefficients)
+  tau.coef.names <- names(mod.gamlss.ds$tau.coefficients)
+  
+  y.vect <- as.vector(mod.gamlss.ds$y)
+  
+  return(list(dim.mu.x=dim.mu.x, dim.sigma.x=dim.sigma.x, dim.nu.x=dim.nu.x, dim.tau.x=dim.tau.x,
+              mu.coef.names=mu.coef.names, sigma.coef.names=sigma.coef.names, nu.coef.names=nu.coef.names, tau.coef.names=tau.coef.names,
+              errorMessage=errorMessage))
   
 }
 #AGGREGATE FUNCTION
