@@ -57,7 +57,8 @@
 
 gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formula = nu.formula,
                      tau.formula = tau.formula, family = family, data=data, mu.fix = mu.fix,  
-                     sigma.fix = sigma.fix, nu.fix = nu.fix, tau.fix = tau.fix){
+                     sigma.fix = sigma.fix, nu.fix = nu.fix, tau.fix = tau.fix,
+                     control=control, i.control=i.control){
   
   
   #**************************************************************************
@@ -68,6 +69,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   ## Capture the nfilter settings
   thr <- dsBase::listDisclosureSettingsDS()
   nfilter.tab <- as.numeric(thr$nfilter.tab)
+  nfilter.glm <- as.numeric(thr$nfilter.glm)
   
   errorMessage <- "No errors"
   
@@ -85,8 +87,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   formulatext <- gsub("equal_symbol", "=", formulatext, fixed = TRUE)
   formulatext <- gsub("comma_symbol", ",", formulatext, fixed = TRUE)
   formula <- stats::as.formula(formulatext)
-  #To Do: check whether formula2use is needed
-  #formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(formula))), env = parent.frame()) # here we need the formula as a 'call' object
+  formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(formula))), env = parent.frame()) # here we need the formula as a 'call' object
   
   sigma.formulatext <- gsub("left_parenthesis", "(", sigma.formula, fixed = TRUE)
   sigma.formulatext <- gsub("right_parenthesis", ")", sigma.formulatext, fixed = TRUE)
@@ -94,8 +95,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   sigma.formulatext <- gsub("equal_symbol", "=", sigma.formulatext, fixed = TRUE)
   sigma.formulatext <- gsub("comma_symbol", ",", sigma.formulatext, fixed = TRUE)
   sigma.formula <- stats::as.formula(sigma.formulatext)
-  #To Do: check whether formula2use is needed
-  #sigma.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(sigma.formula))), env = parent.frame()) # here we need the formula as a 'call' object
+  sigma.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(sigma.formula))), env = parent.frame()) # here we need the formula as a 'call' object
   
   nu.formulatext <- gsub("left_parenthesis", "(", nu.formula, fixed = TRUE)
   nu.formulatext <- gsub("right_parenthesis", ")", nu.formulatext, fixed = TRUE)
@@ -103,8 +103,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   nu.formulatext <- gsub("equal_symbol", "=", nu.formulatext, fixed = TRUE)
   nu.formulatext <- gsub("comma_symbol", ",", nu.formulatext, fixed = TRUE)
   nu.formula <- stats::as.formula(nu.formulatext)
-  #To Do: check whether formula2use is needed
-  #nu.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(nu.formula))), env = parent.frame()) # here we need the formula as a 'call' object
+  nu.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(nu.formula))), env = parent.frame()) # here we need the formula as a 'call' object
   
   tau.formulatext <- gsub("left_parenthesis", "(", tau.formula, fixed = TRUE)
   tau.formulatext <- gsub("right_parenthesis", ")", tau.formulatext, fixed = TRUE)
@@ -112,8 +111,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   tau.formulatext <- gsub("equal_symbol", "=", tau.formulatext, fixed = TRUE)
   tau.formulatext <- gsub("comma_symbol", ",", tau.formulatext, fixed = TRUE)
   tau.formula <- stats::as.formula(tau.formulatext)
-  #To Do: check whether formula2use is needed
-  #tau.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(tau.formula))), env = parent.frame()) # here we need the formula as a 'call' object
+  tau.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(tau.formula))), env = parent.frame()) # here we need the formula as a 'call' object
   
   family <- gsub("left_parenthesis", "(", family, fixed = TRUE)
   family <- gsub("right_parenthesis", ")", family, fixed = TRUE)
@@ -124,10 +122,15 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   c1 <- as.numeric(unlist(strsplit(control, split=",")))
   c2 <- as.numeric(unlist(strsplit(i.control, split=",")))
   
-  ## Perform the first outer iteration of gamlss (to get the desired design matrices and the y.vector)
+  #**************************************************************************
+  #II) First outer iteration of gamlss ---- 
+  # To get the desired matrices and vectors (and their dimensions)
+  # Reconvert the transfer strings into required variable types
+  #**************************************************************************
+
   # to increase computational speed the number of inner and backfitting iterations are set to 1
-  mod.gamlss.ds <- gamlss::gamlss(formula=formula, sigma.formula=sigma.formula, 
-                                  nu.formula=nu.formula, tau.formula=tau.formula,
+  mod.gamlss.ds <- gamlss::gamlss(formula=formula2use, sigma.formula=sigma.formula2use, 
+                                  nu.formula=nu.formula2use, tau.formula=tau.formula2use,
                                   family=family, data=dataTable, method=RS(),
                                   mu.fix=mu.fix, sigma.fix=sigma.fix, nu.fix=nu.fix,
                                   tau.fix=tau.fix,
@@ -137,6 +140,8 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
                                                            gd.tol=c1[7]),
                                   i.control = glim.control(cc=c2[1], cyc=1, 
                                                            bf.cyc=1, bf.tol=c2[4]))
+  
+  parameters <- mod.gamlss.ds$parameters
   
   mu.x <- mod.gamlss.ds$mu.x
   sigma.x <- mod.gamlss.ds$sigma.x
@@ -155,10 +160,172 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   
   y.vect <- as.vector(mod.gamlss.ds$y)
   
-  return(list(dim.mu.x=dim.mu.x, dim.sigma.x=dim.sigma.x, dim.nu.x=dim.nu.x, dim.tau.x=dim.tau.x,
+  #**************************************************************************
+  #III) Disclosure risk----
+  #**************************************************************************
+  
+  #*i) Oversaturated model----
+  # (test against nfilter.glm)
+  glm.saturation.invalid <- 0
+  num.n <- mod.gamlss.ds$N
+  num.mu.p <- dim.mu.x[2]
+  num.sigma.p <- dim.sigma.x[2]
+  num.nu.p <- dim.nu.x[2]
+  num.tau.p <- dim.tau.x[2]
+  
+  if(mod.gamlss.ds$df.fit > nfilter.glm*num.n){
+    glm.saturation.invalid <- 1
+    errorMessage <- "ERROR: Model has too many parameters, there is a possible risk of disclosure - please simplify model"
+  }
+  
+  if(!is.null(num.mu.p)){
+    if(num.mu.p > nfilter.glm*num.n){
+      glm.saturation.invalid <- 1
+      errorMessage <- "ERROR: Model has too many parameters, there is a possible risk of disclosure - please simplify model"
+    }
+  }
+  
+  if(!is.null(num.sigma.p)){
+    if(num.sigma.p > nfilter.glm*num.n){
+      glm.saturation.invalid <- 1
+      errorMessage <- "ERROR: Model has too many parameters, there is a possible risk of disclosure - please simplify model"
+    }
+  }
+  
+  if(!is.null(num.nu.p)){
+    if(num.nu.p > nfilter.glm*num.n){
+      glm.saturation.invalid <- 1
+      errorMessage <- "ERROR: Model has too many parameters, there is a possible risk of disclosure - please simplify model"
+    }
+  }
+  
+  if(!is.null(num.tau.p)){
+    if(num.tau.p > nfilter.glm*num.n){
+      glm.saturation.invalid <- 1
+      errorMessage <- "ERROR: Model has too many parameters, there is a possible risk of disclosure - please simplify model"
+    }
+  }
+  
+  #*ii) Invalid y, mu.x, sigma.x, nu.x or tau.x ----
+  # If y, X or w data are invalid but user has modified clientside
+  # function (ds.gamlss) to circumvent trap, model will get to this point without
+  # giving a controlled shut down with a warning about invalid data.
+  # So as a safety measure, we will now use the same test that is used to
+  # trigger a controlled trap in the clientside function to destroy the
+  # score.vector and information.matrix in the study with the problem.
+  
+  ## check y vector validity
+  y.invalid <- 0
+  
+  # count number of unique non-missing values (disclosure risk only arises with two levels)
+  unique.values.noNA.y <- unique(y.vect[stats::complete.cases(y.vect)])
+  
+  # if two levels, check whether either level 0 < n < nfilter.tab
+  if(length(unique.values.noNA.y)==2){
+    tabvar <- table(y.vect)[table(y.vect)>=1]  # tabvar counts n in all categories with at least one observation
+    min.category <- min(tabvar)
+    if(min.category < nfilter.tab){
+      y.invalid <- 1
+      errorMessage <- "ERROR: y vector is binary with one category less than filter threshold for table cell size"
+    }
+  }
+  
+  ## check validity of design matrices
+  # Check no dichotomous X vectors with between 1 and filter.threshold 
+  # observations at either level
+  
+  # mu
+  mu.par.invalid <- NULL
+  if(!is.null(num.mu.p)){
+    mu.par.invalid <- rep(0, times=num.mu.p)
+    for(pj in 1:num.mu.p){
+      unique.values.noNA <- unique((mu.x[,pj])[stats::complete.cases(mu.x[,pj])]) 
+      if(length(unique.values.noNA)==2){
+        tabvar <- table(mu.x[,pj])[table(mu.x[,pj])>=1]  # tabvar counts n in all categories with at least one observation
+        min.category <- min(tabvar)
+        if(min.category < nfilter.tab){
+          mu.par.invalid[pj] <- 1
+          errorMessage <- "ERROR: at least one column in mu.x matrix is binary with one category less than filter threshold for table cell size"
+        }
+      }
+    }
+  }
+  
+  # sigma
+  sigma.par.invalid <- NULL
+  if(!is.null(num.sigma.p)){
+    sigma.par.invalid <- rep(0, times=num.sigma.p)
+    for(pj in 1:num.sigma.p){
+      unique.values.noNA <- unique((sigma.x[,pj])[stats::complete.cases(sigma.x[,pj])]) 
+      if(length(unique.values.noNA)==2){
+        tabvar <- table(sigma.x[,pj])[table(sigma.x[,pj])>=1]  # tabvar counts n in all categories with at least one observation
+        min.category <- min(tabvar)
+        if(min.category < nfilter.tab){
+          sigma.par.invalid[pj] <- 1
+          errorMessage <- "ERROR: at least one column in sigma.x matrix is binary with one category less than filter threshold for table cell size"
+        }
+      }
+    }
+  }
+  
+  # nu
+  nu.par.invalid <- NULL
+  if(!is.null(num.nu.p)){
+    nu.par.invalid <- rep(0, times=num.nu.p)
+    for(pj in 1:num.nu.p){
+      unique.values.noNA <- unique((nu.x[,pj])[stats::complete.cases(nu.x[,pj])]) 
+      if(length(unique.values.noNA)==2){
+        tabvar <- table(nu.x[,pj])[table(nu.x[,pj])>=1]  # tabvar counts n in all categories with at least one observation
+        min.category <- min(tabvar)
+        if(min.category < nfilter.tab){
+          nu.par.invalid[pj] <- 1
+          errorMessage <- "ERROR: at least one column in nu.x matrix is binary with one category less than filter threshold for table cell size"
+        }
+      }
+    }
+  }
+  
+  # tau
+  tau.par.invalid <- NULL
+  if(!is.null(num.tau.p)){
+    tau.par.invalid <- rep(0, times=num.tau.p)
+    for(pj in 1:num.tau.p){
+      unique.values.noNA <- unique((tau.x[,pj])[stats::complete.cases(tau.x[,pj])]) 
+      if(length(unique.values.noNA)==2){
+        tabvar <- table(tau.x[,pj])[table(tau.x[,pj])>=1]  # tabvar counts n in all categories with at least one observation
+        min.category <- min(tabvar)
+        if(min.category < nfilter.tab){
+          tau.par.invalid[pj] <- 1
+          errorMessage <- "ERROR: at least one column in tau.x matrix is binary with one category less than filter threshold for table cell size"
+        }
+      }
+    }
+  }
+  
+  #*iii) Combine disclosure risks----
+  # If y, mu.x, sigma.x, nu.x or tau.x are invalid, or the model is overparameterized, this will be detected by gamlssDS1
+  # and passed to ds.gamlss resulting in a warning and a controlled shut down of the function.
+  # But in case someone modifies the client side function to circumvent the trap, so the
+  # error is only apparent once the main main iterations have started via gamlssDS2
+  # the equivalent tests in gamlssDS2 will destroy the info.matrix and score.vector in the affected study so
+  # the model fitting will simply terminate.
+  if(!(y.invalid>0 || sum(mu.par.invalid)>0|| sum(sigma.par.invalid)>0 || sum(nu.par.invalid)>0 || 
+         sum(tau.par.invalid)>0 || glm.saturation.invalid>0)){
+    errorMessage <- "No errors"
+  }else{
+    errorMessage <- "Study data or applied model invalid for this source"
+  }
+  
+  #**************************************************************************
+  #IV) Output ----
+  #**************************************************************************
+  return(list(parameters=parameters,
+              dim.mu.x=dim.mu.x, dim.sigma.x=dim.sigma.x, dim.nu.x=dim.nu.x, dim.tau.x=dim.tau.x,
               mu.coef.names=mu.coef.names, sigma.coef.names=sigma.coef.names, nu.coef.names=nu.coef.names, tau.coef.names=tau.coef.names,
-              errorMessage=errorMessage))
+              y.invalid=y.invalid, 
+              mu.par.invalid=mu.par.invalid, nu.par.invalid=nu.par.invalid, tau.par.invalid=tau.par.invalid,
+              glm.saturation.invalid=glm.saturation.invalid, errorMessage=errorMessage))
   
 }
-#AGGREGATE FUNCTION
+# AGGREGATE FUNCTION
 # gamlssDS1

@@ -14,7 +14,9 @@ gamlssDS1(
   mu.fix = mu.fix,
   sigma.fix = sigma.fix,
   nu.fix = nu.fix,
-  tau.fix = tau.fix
+  tau.fix = tau.fix,
+  control = control,
+  i.control = i.control
 )
 }
 \arguments{
