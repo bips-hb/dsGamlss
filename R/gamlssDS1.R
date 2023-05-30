@@ -62,7 +62,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   
   
   #**************************************************************************
-  #I) Preparation ---- 
+  # I) Preparation ---- 
   # Reconvert the transfer strings into required variable types
   #**************************************************************************
   
@@ -123,7 +123,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   c2 <- as.numeric(unlist(strsplit(i.control, split=",")))
   
   #**************************************************************************
-  #II) First outer iteration of gamlss ---- 
+  # II) First outer iteration of gamlss ---- 
   # To get the desired matrices and vectors (and their dimensions)
   # Reconvert the transfer strings into required variable types
   #**************************************************************************
@@ -161,12 +161,12 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   y.vect <- as.vector(mod.gamlss.ds$y)
   
   #**************************************************************************
-  #III) Disclosure risk----
+  # III) Disclosure risk----
   #**************************************************************************
   
   #*i) Oversaturated model----
   # (test against nfilter.glm)
-  glm.saturation.invalid <- 0
+  gamlss.saturation.invalid <- 0
   num.n <- mod.gamlss.ds$N
   num.mu.p <- dim.mu.x[2]
   num.sigma.p <- dim.sigma.x[2]
@@ -174,34 +174,34 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   num.tau.p <- dim.tau.x[2]
   
   if(mod.gamlss.ds$df.fit > nfilter.glm*num.n){
-    glm.saturation.invalid <- 1
+    gamlss.saturation.invalid <- 1
     errorMessage <- "ERROR: Model has too many parameters, there is a possible risk of disclosure - please simplify model"
   }
   
   if(!is.null(num.mu.p)){
     if(num.mu.p > nfilter.glm*num.n){
-      glm.saturation.invalid <- 1
+      gamlss.saturation.invalid <- 1
       errorMessage <- "ERROR: Model has too many parameters, there is a possible risk of disclosure - please simplify model"
     }
   }
   
   if(!is.null(num.sigma.p)){
     if(num.sigma.p > nfilter.glm*num.n){
-      glm.saturation.invalid <- 1
+      gamlss.saturation.invalid <- 1
       errorMessage <- "ERROR: Model has too many parameters, there is a possible risk of disclosure - please simplify model"
     }
   }
   
   if(!is.null(num.nu.p)){
     if(num.nu.p > nfilter.glm*num.n){
-      glm.saturation.invalid <- 1
+      gamlss.saturation.invalid <- 1
       errorMessage <- "ERROR: Model has too many parameters, there is a possible risk of disclosure - please simplify model"
     }
   }
   
   if(!is.null(num.tau.p)){
     if(num.tau.p > nfilter.glm*num.n){
-      glm.saturation.invalid <- 1
+      gamlss.saturation.invalid <- 1
       errorMessage <- "ERROR: Model has too many parameters, there is a possible risk of disclosure - please simplify model"
     }
   }
@@ -310,21 +310,21 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   # the equivalent tests in gamlssDS2 will destroy the info.matrix and score.vector in the affected study so
   # the model fitting will simply terminate.
   if(!(y.invalid>0 || sum(mu.par.invalid)>0|| sum(sigma.par.invalid)>0 || sum(nu.par.invalid)>0 || 
-         sum(tau.par.invalid)>0 || glm.saturation.invalid>0)){
+         sum(tau.par.invalid)>0 || gamlss.saturation.invalid>0)){
     errorMessage <- "No errors"
   }else{
     errorMessage <- "Study data or applied model invalid for this source"
   }
   
   #**************************************************************************
-  #IV) Output ----
+  # IV) Output ----
   #**************************************************************************
   return(list(parameters=parameters,
               dim.mu.x=dim.mu.x, dim.sigma.x=dim.sigma.x, dim.nu.x=dim.nu.x, dim.tau.x=dim.tau.x,
               mu.coef.names=mu.coef.names, sigma.coef.names=sigma.coef.names, nu.coef.names=nu.coef.names, tau.coef.names=tau.coef.names,
-              y.invalid=y.invalid, 
-              mu.par.invalid=mu.par.invalid, nu.par.invalid=nu.par.invalid, tau.par.invalid=tau.par.invalid,
-              glm.saturation.invalid=glm.saturation.invalid, errorMessage=errorMessage))
+              y.invalid=y.invalid, mu.par.invalid=mu.par.invalid, sigma.par.invalid=sigma.par.invalid,
+              nu.par.invalid=nu.par.invalid, tau.par.invalid=tau.par.invalid,
+              gamlss.saturation.invalid=gamlss.saturation.invalid, errorMessage=errorMessage))
   
 }
 # AGGREGATE FUNCTION
