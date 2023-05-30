@@ -2,7 +2,7 @@
 % Please edit documentation in R/gamlssDS1.R
 \name{gamlssDS1}
 \alias{gamlssDS1}
-\title{gamlssDS1 an aggregate function called by ds.gamlss}
+\title{gamlssDS1 called by ds.gamlss}
 \usage{
 gamlssDS1(
   formula = formula,
@@ -80,12 +80,13 @@ residuals (the normalised quantile residuals of the model) are not disclosed to
 the client-side.
 }
 \description{
-This function calls the gamlssDS1 that sets up the model frame 
-on the server side and performs some checks on the data.
+This is the first serverside aggregate function called by ds.gamlss.
 }
 \details{
-For additional details please see the extensive header of ds.gamlss and also
-the gamlss function in native R gamlss package.
+It is an aggregation function that sets up the model structure and creates
+the starting beta vectors that feeds, via ds.gamlss into gamlssDS2 to enable iterative
+fitting of the gamlss model that has been specified. For more details please see the 
+extensive header of ds.gamlss and also the gamlss function in native R gamlss package.
 }
 \author{
 Annika Swenne
