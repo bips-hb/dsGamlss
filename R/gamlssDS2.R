@@ -76,6 +76,7 @@ gamlssDS2 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   #**************************************************************************
   # I) Preparation ---- 
   # Reconvert the transfer strings into required variable types
+  # Extract the varnames
   #**************************************************************************
   
   ## Capture the nfilter settings
@@ -98,7 +99,6 @@ gamlssDS2 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   formulatext <- gsub("comma_symbol", ",", formulatext, fixed = TRUE)
   formula <- stats::as.formula(formulatext)
   formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(formula))), env = parent.frame()) # here we need the formula as a 'call' object
-  original.formulatext <- formulatext
   
   sigma.formulatext <- gsub("left_parenthesis", "(", sigma.formula, fixed = TRUE)
   sigma.formulatext <- gsub("right_parenthesis", ")", sigma.formulatext, fixed = TRUE)
@@ -107,7 +107,6 @@ gamlssDS2 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   sigma.formulatext <- gsub("comma_symbol", ",", sigma.formulatext, fixed = TRUE)
   sigma.formula <- stats::as.formula(sigma.formulatext)
   sigma.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(sigma.formula))), env = parent.frame()) # here we need the formula as a 'call' object
-  sigma.original.formulatext <- sigma.formulatext
   
   nu.formulatext <- gsub("left_parenthesis", "(", nu.formula, fixed = TRUE)
   nu.formulatext <- gsub("right_parenthesis", ")", nu.formulatext, fixed = TRUE)
@@ -116,7 +115,6 @@ gamlssDS2 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   nu.formulatext <- gsub("comma_symbol", ",", nu.formulatext, fixed = TRUE)
   nu.formula <- stats::as.formula(nu.formulatext)
   nu.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(nu.formula))), env = parent.frame()) # here we need the formula as a 'call' object
-  nu.original.formulatext <- nu.formulatext
   
   tau.formulatext <- gsub("left_parenthesis", "(", tau.formula, fixed = TRUE)
   tau.formulatext <- gsub("right_parenthesis", ")", tau.formulatext, fixed = TRUE)
@@ -125,7 +123,6 @@ gamlssDS2 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   tau.formulatext <- gsub("comma_symbol", ",", tau.formulatext, fixed = TRUE)
   tau.formula <- stats::as.formula(tau.formulatext)
   tau.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(tau.formula))), env = parent.frame()) # here we need the formula as a 'call' object
-  tau.original.formulatext <- tau.formulatext
   
   family <- gsub("left_parenthesis", "(", family, fixed = TRUE)
   family <- gsub("right_parenthesis", ")", family, fixed = TRUE)
@@ -137,105 +134,65 @@ gamlssDS2 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   c2 <- as.numeric(unlist(strsplit(i.control, split=",")))
   
   ## Get the variable names
-  # Rewrite formula extracting variables nested in strutures like data frame or list
+  # Rewrite formulas extracting variables nested in structures like data frame or list
   # (e.g. D$A~D$B will be re-written A~B)
   # Note final product is a list of the variables in the model (yvector and covariates)
   # it is NOT a list of model terms - these are derived later
   
-  # Convert formula string into separate variable names split by |
-  formulatext <- gsub("pb(", "", formulatext, fixed=TRUE) 
-  formulatext <- gsub(")", "", formulatext, fixed=TRUE) 
-  formulatext <- gsub(" ", "", formulatext, fixed=TRUE)
-  formulatext <- gsub("~", "|", formulatext, fixed=TRUE)
-  formulatext <- gsub("+", "|", formulatext, fixed=TRUE)
-  formulatext <- gsub("*", "|", formulatext, fixed=TRUE)
-  formulatext <- gsub("||", "|", formulatext, fixed=TRUE)
-  
-  sigma.formulatext <- gsub("pb(", "", sigma.formulatext, fixed=TRUE) 
-  sigma.formulatext <- gsub(")", "", sigma.formulatext, fixed=TRUE) 
-  sigma.formulatext <- gsub(" ", "", sigma.formulatext, fixed=TRUE)
-  sigma.formulatext <- gsub("~", "|", sigma.formulatext, fixed=TRUE)
-  sigma.formulatext <- gsub("+", "|", sigma.formulatext, fixed=TRUE)
-  sigma.formulatext <- gsub("*", "|", sigma.formulatext, fixed=TRUE)
-  sigma.formulatext <- gsub("||", "|", sigma.formulatext, fixed=TRUE)
-  
-  nu.formulatext <- gsub("pb(", "", nu.formulatext, fixed=TRUE) 
-  nu.formulatext <- gsub(")", "", nu.formulatext, fixed=TRUE) 
-  nu.formulatext <- gsub(" ", "", nu.formulatext, fixed=TRUE)
-  nu.formulatext <- gsub("~", "|", nu.formulatext, fixed=TRUE)
-  nu.formulatext <- gsub("+", "|", nu.formulatext, fixed=TRUE)
-  nu.formulatext <- gsub("*", "|", nu.formulatext, fixed=TRUE)
-  nu.formulatext <- gsub("||", "|", nu.formulatext, fixed=TRUE)
-  
-  tau.formulatext <- gsub("pb(", "", tau.formulatext, fixed=TRUE) 
-  tau.formulatext <- gsub(")", "", tau.formulatext, fixed=TRUE) 
-  tau.formulatext <- gsub(" ", "", tau.formulatext, fixed=TRUE)
-  tau.formulatext <- gsub("~", "|", tau.formulatext, fixed=TRUE)
-  tau.formulatext <- gsub("+", "|", tau.formulatext, fixed=TRUE)
-  tau.formulatext <- gsub("*", "|", tau.formulatext, fixed=TRUE)
-  tau.formulatext <- gsub("||", "|", tau.formulatext, fixed=TRUE)
+  # Convert formula strings into separate variable names split by |
+  formulas <- paste(formulatext, sigma.formulatext, nu.formulatext, tau.formulatext, sep="|")
+  formulas <- gsub("pb(", "", formulas, fixed=TRUE) 
+  formulas <- gsub(")", "", formulas, fixed=TRUE) 
+  formulas <- gsub(" ", "", formulas, fixed=TRUE)
+  formulas <- gsub("~", "|", formulas, fixed=TRUE)
+  formulas <- gsub("+", "|", formulas, fixed=TRUE)
+  formulas <- gsub("*", "|", formulas, fixed=TRUE)
+  formulas <- gsub("||", "|", formulas, fixed=TRUE)
   
   # Remember model.variables and then varnames include both yvect and linear predictor components 
-  mu.model.variables <- unlist(strsplit(formulatext, split="|", fixed=TRUE))
-  sigma.model.variables <- unlist(strsplit(sigma.formulatext, split="|", fixed=TRUE))
-  nu.model.variables <- unlist(strsplit(nu.formulatext, split="|", fixed=TRUE))
-  tau.model.variables <- unlist(strsplit(tau.formulatext, split="|", fixed=TRUE))
-  
-  # mu
-  mu.varnames <- c()
-  for(i in 1:length(mu.model.variables)){
-    elt <- unlist(strsplit(mu.model.variables[i], split="$", fixed=TRUE))
+  model.variables <- unlist(strsplit(formulas, split="|", fixed=TRUE))
+
+  varnames <- c()
+  for(i in 1:length(model.variables)){
+    elt <- unlist(strsplit(model.variables[i], split="$", fixed=TRUE))
     if(length(elt) > 1){
-      assign(elt[length(elt)], eval(parse(text=mu.model.variables[i]), envir = parent.frame()), envir = parent.frame())
-      modified.formulatext <- gsub(mu.model.variables[i], elt[length(elt)], original.formulatext, fixed=TRUE)
-      mu.varnames <- append(mu.varnames, elt[length(elt)])
+      assign(elt[length(elt)], eval(parse(text=model.variables[i]), envir = parent.frame()), envir = parent.frame())
+      varnames <- append(varnames, elt[length(elt)])
     }else{
-      mu.varnames <- append(mu.varnames, elt)
+      varnames <- append(varnames, elt)
     }
   }
-  mu.varnames <- unique(mu.varnames)
+  varnames <- unique(varnames)
   
-  # sigma
-  sigma.varnames <- c()
-  for(i in 1:length(sigma.model.variables)){
-    elt <- unlist(strsplit(sigma.model.variables[i], split="$", fixed=TRUE))
-    if(length(elt) > 1){
-      assign(elt[length(elt)], eval(parse(text=sigma.model.variables[i]), envir = parent.frame()), envir = parent.frame())
-      sigma.modified.formulatext <- gsub(sigma.model.variables[i], elt[length(elt)], sigma.original.formulatext, fixed=TRUE)
-      sigma.varnames <- append(sigma.varnames, elt[length(elt)])
-    }else{
-      sigma.varnames <- append(sigma.varnames, elt)
+  if(!is.null(data)){
+    for(v in 1:length(varnames)){
+      varnames[v] <- paste0(data,"$",varnames[v])
+      test.string.0 <- paste0(data,"$","0")
+      test.string.1 <- paste0(data,"$","1")
+      if(varnames[v]==test.string.0) varnames[v] <- "0"
+      if(varnames[v]==test.string.1) varnames[v] <- "1"
     }
+    cbindraw.text <- paste0("cbind(", paste(varnames, collapse=","), ")")
+  }else{
+    cbindraw.text <- paste0("cbind(", paste(varnames, collapse=","), ")")
   }
-  sigma.varnames <- unique(sigma.varnames)
   
-  # nu
-  nu.varnames <- c()
-  for(i in 1:length(nu.model.variables)){
-    elt <- unlist(strsplit(nu.model.variables[i], split="$", fixed=TRUE))
-    if(length(elt) > 1){
-      assign(elt[length(elt)], eval(parse(text=nu.model.variables[i]), envir = parent.frame()), envir = parent.frame())
-      nu.modified.formulatext <- gsub(nu.model.variables[i], elt[length(elt)], nu.original.formulatext, fixed=TRUE)
-      nu.varnames <- append(nu.varnames, elt[length(elt)])
-    }else{
-      nu.varnames <- append(nu.varnames, elt)
-    }
-  }
-  nu.varnames <- unique(nu.varnames)
+  #**************************************************************************
+  #II) Identify missings----  
+  #**************************************************************************
   
-  # tau
-  tau.varnames <- c()
-  for(i in 1:length(tau.model.variables)){
-    elt <- unlist(strsplit(tau.model.variables[i], split="$", fixed=TRUE))
-    if(length(elt) > 1){
-      assign(elt[length(elt)], eval(parse(text=tau.model.variables[i]), envir = parent.frame()), envir = parent.frame())
-      tau.modified.formulatext <- gsub(tau.model.variables[i], elt[length(elt)], tau.original.formulatext, fixed=TRUE)
-      tau.varnames <- append(tau.varnames, elt[length(elt)])
-    }else{
-      tau.varnames <- append(tau.varnames, elt)
-    }
-  }
-  tau.varnames <- unique(tau.varnames)
+  # Identify and use variable names to count missings
+  all.data <- eval(parse(text=cbindraw.text), envir = parent.frame())
+  
+  Ntotal <- dim(all.data)[1]
+  
+  nomiss.any <- stats::complete.cases(all.data)
+  nomiss.any.data <- all.data[nomiss.any,]
+  N.nomiss.any <- dim(nomiss.any.data)[1]
+  
+  Nvalid <- N.nomiss.any
+  Nmissing <- Ntotal-Nvalid
+  
   
 } 
 # AGGREGATE FUNCTION
