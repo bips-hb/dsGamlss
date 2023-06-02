@@ -71,6 +71,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   thr <- dsBase::listDisclosureSettingsDS()
   nfilter.tab <- as.numeric(thr$nfilter.tab)
   nfilter.glm <- as.numeric(thr$nfilter.glm)
+  nfilter.noise <- as.numeric(thr$nfilter.noise)
   
   errorMessage <- "No errors"
   
@@ -165,6 +166,26 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   pb.names <- gsub(pattern=")", replacement="", pb.names, fixed=TRUE)
   
   y.vect <- as.vector(mod.gamlss.ds$y)
+  
+  # Get the anonymized minimum and maximum for each variable in pb.names (similar to scatterPlotDS)
+  # The minimum and maximum are needed to use same knots on all servers during the fitting of the 
+  # smoothing terms
+  # Note that for simplicity at the moment only probabilistic anonymization is implemented
+  pb.xmin <- rep(NA, length(pb.names))
+  pb.xmax <- rep(NA, length(pb.names))
+  for (i in 1:length(pb.names)){
+    x <- eval(parse(text=pb.names[i]), envir = parent.frame())
+    # the study-specific seed for random number generation
+    seed <- getOption("datashield.seed")
+    if (is.null(seed)){
+      stop("gamlssDS1 with pb-smoothers requires 'datashield.seed' R option to operate", call.=FALSE)
+    }else{
+      set.seed(seed)
+      x.new <- x + stats::rnorm(n=length(x), mean=0, sd=sqrt(nfilter.noise*stats::var(x)))
+      pb.xmin[i] <- min(x.new)
+      pb.xmax[i] <- max(x.new)
+    }
+  }
   
   #**************************************************************************
   # III) Disclosure risk----
@@ -328,7 +349,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   return(list(parameters=parameters,
               dim.mu.x=dim.mu.x, dim.sigma.x=dim.sigma.x, dim.nu.x=dim.nu.x, dim.tau.x=dim.tau.x,
               mu.coef.names=mu.coef.names, sigma.coef.names=sigma.coef.names, nu.coef.names=nu.coef.names, tau.coef.names=tau.coef.names,
-              pb.names=pb.names, #pb.xmin=pb.xmin, pb.xmax=pb.xmax, 
+              pb.names=pb.names, pb.xmin=pb.xmin, pb.xmax=pb.xmax, 
               y.invalid=y.invalid, mu.par.invalid=mu.par.invalid, sigma.par.invalid=sigma.par.invalid,
               nu.par.invalid=nu.par.invalid, tau.par.invalid=tau.par.invalid,
               gamlss.saturation.invalid=gamlss.saturation.invalid, errorMessage=errorMessage))
