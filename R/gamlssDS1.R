@@ -126,7 +126,6 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   #**************************************************************************
   # II) First outer iteration of gamlss ---- 
   # To get the desired matrices and vectors (and their dimensions)
-  # Reconvert the transfer strings into required variable types
   #**************************************************************************
 
   # to increase computational speed the number of inner and backfitting iterations are set to 1
@@ -158,6 +157,12 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   sigma.coef.names <- names(mod.gamlss.ds$sigma.coefficients)
   nu.coef.names <- names(mod.gamlss.ds$nu.coefficients)
   tau.coef.names <- names(mod.gamlss.ds$tau.coefficients)
+  
+  smoother.names <- c(mu.coef.names, sigma.coef.names, nu.coef.names, tau.coef.names)
+  pb.names <- smoother.names[grep(pattern="pb(", x=smoother.names, fixed=TRUE)]
+  pb.names <- unique(pb.names)
+  pb.names <- gsub(pattern="pb(", replacement="", pb.names, fixed=TRUE)
+  pb.names <- gsub(pattern=")", replacement="", pb.names, fixed=TRUE)
   
   y.vect <- as.vector(mod.gamlss.ds$y)
   
@@ -323,6 +328,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   return(list(parameters=parameters,
               dim.mu.x=dim.mu.x, dim.sigma.x=dim.sigma.x, dim.nu.x=dim.nu.x, dim.tau.x=dim.tau.x,
               mu.coef.names=mu.coef.names, sigma.coef.names=sigma.coef.names, nu.coef.names=nu.coef.names, tau.coef.names=tau.coef.names,
+              pb.names=pb.names, #pb.xmin=pb.xmin, pb.xmax=pb.xmax, 
               y.invalid=y.invalid, mu.par.invalid=mu.par.invalid, sigma.par.invalid=sigma.par.invalid,
               nu.par.invalid=nu.par.invalid, tau.par.invalid=tau.par.invalid,
               gamlss.saturation.invalid=gamlss.saturation.invalid, errorMessage=errorMessage))
