@@ -159,13 +159,14 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   nu.coef.names <- names(mod.gamlss.ds$nu.coefficients)
   tau.coef.names <- names(mod.gamlss.ds$tau.coefficients)
   
+  y.vect <- as.vector(mod.gamlss.ds$y)
+  
+  ## Smoothers
   smoother.names <- c(mu.coef.names, sigma.coef.names, nu.coef.names, tau.coef.names)
   pb.names <- smoother.names[grep(pattern="pb(", x=smoother.names, fixed=TRUE)]
   pb.names <- unique(pb.names)
   pb.names <- gsub(pattern="pb(", replacement="", pb.names, fixed=TRUE)
   pb.names <- gsub(pattern=")", replacement="", pb.names, fixed=TRUE)
-  
-  y.vect <- as.vector(mod.gamlss.ds$y)
   
   # Get the anonymized minimum and maximum for each variable in pb.names (similar to scatterPlotDS)
   # The minimum and maximum are needed to use same knots on all servers during the fitting of the 
@@ -184,6 +185,39 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
       x.new <- x + stats::rnorm(n=length(x), mean=0, sd=sqrt(nfilter.noise*stats::var(x)))
       pb.xmin[i] <- min(x.new)
       pb.xmax[i] <- max(x.new)
+    }
+  }
+  
+  # get the length of the gamma vectors
+  # mu
+  mu.gamma.length <- NULL
+  if (!is.null(mod.gamlss.ds$mu.coefSmo)){
+    for (s in 1:length(mod.gamlss.ds$mu.coefSmo)){
+      mu.gamma.length <- c(mu.gamma.length, dim(mod.gamlss.ds$mu.coefSmo[[s]]$coef)[1])
+    }
+  }
+  
+  # sigma
+  sigma.gamma.length <- NULL
+  if (!is.null(mod.gamlss.ds$sigma.coefSmo)){
+    for (s in 1:length(mod.gamlss.ds$sigma.coefSmo)){
+      sigma.gamma.length <- c(sigma.gamma.length, dim(mod.gamlss.ds$sigma.coefSmo[[s]]$coef)[1])
+    }
+  }
+  
+  # nu
+  nu.gamma.length <- NULL
+  if (!is.null(mod.gamlss.ds$nu.coefSmo)){
+    for (s in 1:length(mod.gamlss.ds$nu.coefSmo)){
+      nu.gamma.length <- c(nu.gamma.length, dim(mod.gamlss.ds$nu.coefSmo[[s]]$coef)[1])
+    }
+  }
+  
+  # tau
+  tau.gamma.length <- NULL
+  if (!is.null(mod.gamlss.ds$tau.coefSmo)){
+    for (s in 1:length(mod.gamlss.ds$tau.coefSmo)){
+      tau.gamma.length <- c(tau.gamma.length, dim(mod.gamlss.ds$tau.coefSmo[[s]]$coef)[1])
     }
   }
   
@@ -350,6 +384,8 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
               dim.mu.x=dim.mu.x, dim.sigma.x=dim.sigma.x, dim.nu.x=dim.nu.x, dim.tau.x=dim.tau.x,
               mu.coef.names=mu.coef.names, sigma.coef.names=sigma.coef.names, nu.coef.names=nu.coef.names, tau.coef.names=tau.coef.names,
               pb.names=pb.names, pb.xmin=pb.xmin, pb.xmax=pb.xmax, 
+              mu.gamma.length=mu.gamma.length, sigma.gamma.length=sigma.gamma.length,
+              nu.gamma.length=nu.gamma.length, tau.gamma.length=tau.gamma.length,
               y.invalid=y.invalid, mu.par.invalid=mu.par.invalid, sigma.par.invalid=sigma.par.invalid,
               nu.par.invalid=nu.par.invalid, tau.par.invalid=tau.par.invalid,
               gamlss.saturation.invalid=gamlss.saturation.invalid, errorMessage=errorMessage))
