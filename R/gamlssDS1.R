@@ -159,7 +159,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   nu.coef.names <- names(mod.gamlss.ds$nu.coefficients)
   tau.coef.names <- names(mod.gamlss.ds$tau.coefficients)
   
-  y.vect <- as.vector(mod.gamlss.ds$y)
+  y <- as.vector(mod.gamlss.ds$y)
   
   ## Smoothers
   smoother.names <- c(mu.coef.names, sigma.coef.names, nu.coef.names, tau.coef.names)
@@ -222,10 +222,38 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   }
   
   #**************************************************************************
-  # III) Disclosure risk----
+  # III) Initialization ---- 
+  # Initialize the parameter vectors & the deviance
   #**************************************************************************
   
-  #*i) Oversaturated model----
+  ## Initialize & save the parameter vectors on the server-side
+  # since they might be disclosive they cannot be returned to the client
+  if("mu" %in% names(family$parameters)){
+    eval(family$mu.initial)
+    base::assign("mu", mu, envir = parent.frame())
+  }
+  if("sigma" %in% names(family$parameters)){
+    eval(family$sigma.initial)
+    base::assign("sigma", sigma, envir = parent.frame())
+  }
+  if("nu" %in% names(family$parameters)){
+    eval(family$nu.initial)
+    base::assign("nu", nu, envir = parent.frame())
+  }
+  if("tau" %in% names(family$parameters)){
+    eval(family$tau.initial)
+    base::assign("tau", tau, envir = parent.frame())
+  }
+  
+  ## Initialize deviance
+  G.dev.incr  <- eval(body(family$G.dev.incr))  # deviance increment (function provided by gamlss.family object)
+  G.dev <- sum(G.dev.incr)  # the weighted global deviance
+  
+  #**************************************************************************
+  # IV) Disclosure risk----
+  #**************************************************************************
+  
+  #*1) Oversaturated model----
   # (test against nfilter.glm)
   gamlss.saturation.invalid <- 0
   num.n <- mod.gamlss.ds$N
@@ -267,7 +295,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     }
   }
   
-  #*ii) Invalid y, mu.x, sigma.x, nu.x or tau.x ----
+  #*2) Invalid y, mu.x, sigma.x, nu.x or tau.x ----
   # If y, X or w data are invalid but user has modified clientside
   # function (ds.gamlss) to circumvent trap, model will get to this point without
   # giving a controlled shut down with a warning about invalid data.
@@ -279,11 +307,11 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   y.invalid <- 0
   
   # count number of unique non-missing values (disclosure risk only arises with two levels)
-  unique.values.noNA.y <- unique(y.vect[stats::complete.cases(y.vect)])
+  unique.values.noNA.y <- unique(y[stats::complete.cases(y)])
   
   # if two levels, check whether either level 0 < n < nfilter.tab
   if(length(unique.values.noNA.y)==2){
-    tabvar <- table(y.vect)[table(y.vect)>=1]  # tabvar counts n in all categories with at least one observation
+    tabvar <- table(y)[table(y)>=1]  # tabvar counts n in all categories with at least one observation
     min.category <- min(tabvar)
     if(min.category < nfilter.tab){
       y.invalid <- 1
@@ -363,7 +391,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     }
   }
   
-  #*iii) Combine disclosure risks----
+  #*3) Combine disclosure risks----
   # If y, mu.x, sigma.x, nu.x or tau.x are invalid, or the model is overparameterized, this will be detected by gamlssDS1
   # and passed to ds.gamlss resulting in a warning and a controlled shut down of the function.
   # But in case someone modifies the client side function to circumvent the trap, so the
@@ -378,9 +406,9 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   }
   
   #**************************************************************************
-  # IV) Output ----
+  # V) Output ----
   #**************************************************************************
-  return(list(parameters=parameters,
+  return(list(G.dev=G.dev, parameters=parameters,
               dim.mu.x=dim.mu.x, dim.sigma.x=dim.sigma.x, dim.nu.x=dim.nu.x, dim.tau.x=dim.tau.x,
               mu.coef.names=mu.coef.names, sigma.coef.names=sigma.coef.names, nu.coef.names=nu.coef.names, tau.coef.names=tau.coef.names,
               pb.names=pb.names, pb.xmin=pb.xmin, pb.xmax=pb.xmax, 
