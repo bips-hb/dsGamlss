@@ -8,6 +8,8 @@
 #' appropriate serverside error message is created and returned to ds.gamlss on the 
 #' clientside. For more details please see the extensive header of ds.gamlss and also the
 #' gamlss function in native R gamlss package.
+#' @param parameter a string specifing for which of the model parameters "mu", "sigma", "nu"
+#' or "tau" the model fitting should be performed
 #' @param formula a formula object, with the response on the left of an ~ operator, 
 #' and the terms, separated by + operators, on the right. Nonparametric smoothing
 #' terms are indicated by pb() for penalised beta splines, cs for smoothing splines, 
@@ -57,6 +59,8 @@
 #' algorithm), (iv) bf.tol (the convergence criterion (tolerance level) for the 
 #' backfitting algorithm). The default values for these 4 parameters are set to 
 #' c(0.001, 50, 30, 0.001).
+#' @param outer.iteration.count a numeric value indicating the number of the outer
+#' iteration
 #' @return a gamlss object with all components as in the native R gamlss function. 
 #' Individual-level information like the components y (the response response) and 
 #' residuals (the normalised quantile residuals of the model) are not disclosed to 
@@ -67,16 +71,18 @@
 #' @export
 #'
 
-gamlssDS2 <- function(formula = formula, sigma.formula = sigma.formula, nu.formula = nu.formula,
-                      tau.formula = tau.formula, family = family, data=data, mu.fix = mu.fix,  
-                      sigma.fix = sigma.fix, nu.fix = nu.fix, tau.fix = tau.fix,
-                      mu.beta.vect = mu.beta.vect, sigma.beta.vect = sigma.beta.vect,
-                      nu.beta.vect = nu.beta.vect, tau.beta.vect = tau.beta.vect,
-                      control = control, i.control = i.control){
+gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = sigma.formula,
+                      nu.formula = nu.formula, tau.formula = tau.formula, family = family, 
+                      data=data, mu.fix = mu.fix, sigma.fix = sigma.fix, nu.fix = nu.fix, 
+                      tau.fix = tau.fix, mu.beta.vect = mu.beta.vect, sigma.beta.vect = sigma.beta.vect,
+                      nu.beta.vect = nu.beta.vect, tau.beta.vect = tau.beta.vect, control = control, 
+                      i.control = i.control, outer.iteration.count = outer.iteration.count){
+  
   #**************************************************************************
   # I) Preparation ---- 
   # Reconvert the transfer strings into required variable types
   # Extract the varnames
+  # Get function to calculate deviance increment
   #**************************************************************************
   
   ## Capture the nfilter settings
@@ -85,13 +91,14 @@ gamlssDS2 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   nfilter.glm <- as.numeric(thr$nfilter.glm)
   
   ## Get the value of the 'data' parameter provided as character on the client side
-  if(is.null(data)){
-    dataTable <- NULL 
+  dataname <- data
+  if(is.null(dataname)){
+    data <- NULL 
   }else{
-    dataTable <- eval(parse(text=data), envir = parent.frame())
+    data <- eval(parse(text=dataname), envir = parent.frame())
   }
   
-  ## Reconvert the special symbols to create the appropriate formula & gamlss.family objects
+  ## Reconvert the special symbols to create the appropriate formula, gamlss.family objects, beta & gamma vectors
   formulatext <- gsub("left_parenthesis", "(", formula, fixed = TRUE)
   formulatext <- gsub("right_parenthesis", ")", formulatext, fixed = TRUE)
   formulatext <- gsub("tilde_symbol", "~", formulatext, fixed = TRUE)
@@ -130,6 +137,8 @@ gamlssDS2 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   family <- gsub("comma_symbol", ",", family, fixed = TRUE)
   family <- gamlss.dist::as.family(eval(parse(text=family)))
   
+  dev.function <- family$G.dev.incr
+  
   c1 <- as.numeric(unlist(strsplit(control, split=",")))
   c2 <- as.numeric(unlist(strsplit(i.control, split=",")))
   
@@ -164,11 +173,11 @@ gamlssDS2 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   }
   varnames <- unique(varnames)
   
-  if(!is.null(data)){
+  if(!is.null(dataname)){
     for(v in 1:length(varnames)){
-      varnames[v] <- paste0(data,"$",varnames[v])
-      test.string.0 <- paste0(data,"$","0")
-      test.string.1 <- paste0(data,"$","1")
+      varnames[v] <- paste0(dataname,"$",varnames[v])
+      test.string.0 <- paste0(dataname,"$","0")
+      test.string.1 <- paste0(dataname,"$","1")
       if(varnames[v]==test.string.0) varnames[v] <- "0"
       if(varnames[v]==test.string.1) varnames[v] <- "1"
     }
@@ -178,7 +187,7 @@ gamlssDS2 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   }
   
   #**************************************************************************
-  #II) Identify missings----  
+  # II) Identify missings----  
   #**************************************************************************
   
   # Identify and use variable names to count missings
@@ -192,6 +201,125 @@ gamlssDS2 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   
   Nvalid <- N.nomiss.any
   Nmissing <- Ntotal-Nvalid
+  
+  #**************************************************************************
+  # III) Calculate matrix & vector to return to client ----  
+  #**************************************************************************
+  
+  #*i) Fit the model ----
+  # Now fit model specified in formula:
+  # to increase computational speed the number of inner and backfitting iterations are set to 1
+  mod.gamlss.ds <- gamlss::gamlss(formula=formula2use, sigma.formula=sigma.formula2use, 
+                                  nu.formula=nu.formula2use, tau.formula=tau.formula2use,
+                                  family=family, data=data, method=RS(),
+                                  mu.fix=mu.fix, sigma.fix=sigma.fix, nu.fix=nu.fix,
+                                  tau.fix=tau.fix,
+                                  control = gamlss.control(c.crit=c1[1], n.cyc=1, 
+                                                           mu.step=c1[3], sigma.step=c1[4], 
+                                                           nu.step=c1[5], tau.step=c1[6],
+                                                           gd.tol=c1[7]),
+                                  i.control = glim.control(cc=c2[1], cyc=1, 
+                                                           bf.cyc=1, bf.tol=c2[4]))
+  
+  # get design matrix for the parameter
+  X.mat.orig <- as.matrix(eval(parse(text=paste("mod.gamlss.ds$", parameter, ".x", sep=""))))
+  y <- as.vector(mod.gamlss.ds$y)
+  
+  #*ii) Update vectors----
+  ## Calculate predictor vector eta for the parameter
+  if("mu" %in% names(family$parameters)){
+    mu <- base::get("mu", envir = parent.frame())
+  }
+  if("sigma" %in% names(family$parameters)){
+    sigma <- base::get("sigma", envir = parent.frame())
+  }
+  if("nu" %in% names(family$parameters)){
+    nu <- base::get("nu", envir = parent.frame())
+  }
+  if("tau" %in% names(family$parameters)){
+    tau <- base::get("tau", envir = parent.frame())
+  }
+  eta <- eval(parse(text=paste("family$", parameter, ".linkfun(", parameter, ")", sep="")))
+  
+  ## Calculate score and weights (for Fisher-scoring algorithm)
+  dr <- eval(parse(text=paste("family$", parameter, ".dr(eta)", sep="")))  # dparameter/ deta
+  dr <- 1/dr  # deta/ dparameter = 1/ (dparameter/ deta) 
+  
+  # get the first and second derivatives of the log-likelihood
+  if (parameter=="mu"){
+    fv <- mu
+    # first derivative of log-likelihood
+    dldp.function <- family$dldm
+    formals(dldp.function, envir=new.env()) <- alist(mu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    # second derivative of log-likelihood
+    d2ldp2.function <- family$d2ldm2
+    formals(d2ldp2.function, envir=new.env()) <- alist(mu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    # deviance
+    formals(dev.function, envir=new.env()) <- alist(mu = fv)
+  }
+  if (parameter=="sigma"){
+    fv <- sigma
+    # first derivative of log-likelihood
+    dldp.function <- family$dldd
+    formals(dldp.function, envir=new.env()) <- alist(sigma = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    # second derivative of log-likelihood
+    d2ldp2.function <- family$d2ldd2
+    formals(d2ldp2.function, envir=new.env()) <- alist(sigma = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    # deviance
+    formals(dev.function, envir=new.env()) <- alist(sigma = fv)
+  }
+  if (parameter=="nu"){
+    fv <- nu
+    # first derivative of log-likelihood
+    dldp.function <- family$dldv
+    formals(dldp.function, envir=new.env()) <- alist(nu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    # second derivative of log-likelihood
+    d2ldp2.function <- family$d2ldv2
+    formals(d2ldp2.function, envir=new.env()) <- alist(nu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    # deviance
+    formals(dev.function, envir=new.env()) <- alist(nu = fv)
+  }
+  if (parameter=="tau"){
+    fv <- tau
+    # first derivative of log-likelihood
+    dldp.function <- family$dldt
+    formals(dldp.function, envir=new.env()) <- alist(tau = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    # second derivative of log-likelihood
+    d2ldp2.function <- family$d2ldt2
+    formals(d2ldp2.function, envir=new.env()) <- alist(tau = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    # deviance
+    formals(dev.function, envir=new.env()) <- alist(tau = fv)
+  }
+  
+  dldp <- dldp.function(fv)  # first derivative of log-likelihood with respect to parameter
+  d2ldp2 <- d2ldp2.function(fv)  # expected  second derivative of log-Likelihood with respect to parameter
+  d2ldp2 <- ifelse(d2ldp2 < -1e-15, d2ldp2, -1e-15) 
+  wt <- -(d2ldp2/(dr*dr)) # weights for Fisher-scoring algorithm =-(d2l/d2p)(dparameter/deta)^2
+  # we need to stop the weights to go to Infty
+  wt <- ifelse(wt>1e+10,1e+10,wt)
+  wt <- ifelse(wt<1e-10,1e-10,wt) 
+  
+  ## Update working variable vector wv
+  wv <- eta+dldp/(dr*wt)
+  if (family$type=="Mixed"){
+    wv <-ifelse(is.nan(wv),0,wv)
+  }
+  
+  ## Calculate deviance
+  di <- dev.function(fv)  # deviance increment
+  dv <- sum(di)  # the global deviance on the server
+  
+  
+  #**************************************************************************
+  # IV) Save working variable on the server  ----  
+  #**************************************************************************
+  
+  # We need to save the working variable on the server for the next iteration
+  # Since the working variable could be disclosive we keep it on the server and do not
+  # reveal it to the client
+  
+  
+  
   
   
 } 
