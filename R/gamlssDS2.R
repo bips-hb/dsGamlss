@@ -44,6 +44,14 @@
 #' vector of regression coefficients for nu at the current iteration.
 #' @param tau.beta.vect a numeric vector created by the clientside function specifying the
 #' vector of regression coefficients for tau at the current iteration.
+#' @param mu.gamma.vect a numeric vector created by the clientside function specifying the
+#' vector of smoothing regression coefficients for mu at the current iteration.
+#' @param sigma.gamma.vect a numeric vector created by the clientside function specifying the
+#' vector of smoothing regression coefficients for sigma at the current iteration.
+#' @param nu.gamma.vect a numeric vector created by the clientside function specifying the
+#' vector of smoothing regression coefficients for nu at the current iteration.
+#' @param tau.gamma.vect a numeric vector created by the clientside function specifying the
+#' vector of smoothing regression coefficients for tau at the current iteration.
 #' @param control this sets the control parameters of the outer iterations algorithm 
 #' using the gamlss.control function. This is a vector of 7 numeric values: (i) c.crit 
 #' (the convergence criterion for the algorithm), (ii) n.cyc (the number of cycles of 
@@ -59,8 +67,6 @@
 #' algorithm), (iv) bf.tol (the convergence criterion (tolerance level) for the 
 #' backfitting algorithm). The default values for these 4 parameters are set to 
 #' c(0.001, 50, 30, 0.001).
-#' @param outer.iteration.count a numeric value indicating the number of the outer
-#' iteration
 #' @return a gamlss object with all components as in the native R gamlss function. 
 #' Individual-level information like the components y (the response response) and 
 #' residuals (the normalised quantile residuals of the model) are not disclosed to 
@@ -73,10 +79,11 @@
 
 gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = sigma.formula,
                       nu.formula = nu.formula, tau.formula = tau.formula, family = family, 
-                      data=data, mu.fix = mu.fix, sigma.fix = sigma.fix, nu.fix = nu.fix, 
-                      tau.fix = tau.fix, mu.beta.vect = mu.beta.vect, sigma.beta.vect = sigma.beta.vect,
-                      nu.beta.vect = nu.beta.vect, tau.beta.vect = tau.beta.vect, control = control, 
-                      i.control = i.control, outer.iteration.count = outer.iteration.count){
+                      data=data, mu.beta.vect = mu.beta.vect, sigma.beta.vect = sigma.beta.vect,
+                      nu.beta.vect = nu.beta.vect, tau.beta.vect = tau.beta.vect,
+                      mu.gamma.vect = mu.gamma.vect, sigma.gamma.vect = sigma.gamma.vect,
+                      nu.gamma.vect = nu.gamma.vect, tau.gamma.vect = tau.gamma.vect,
+                      control = control, i.control = i.control){
   
   #**************************************************************************
   # I) Preparation ---- 
@@ -95,7 +102,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   if(is.null(dataname)){
     data <- NULL 
   }else{
-    data <- eval(parse(text=dataname), envir = parent.frame())
+    data <- eval(parse(text=dataname), env=parent.frame())
   }
   
   ## Reconvert the special symbols to create the appropriate formula, gamlss.family objects, beta & gamma vectors
@@ -105,7 +112,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   formulatext <- gsub("equal_symbol", "=", formulatext, fixed = TRUE)
   formulatext <- gsub("comma_symbol", ",", formulatext, fixed = TRUE)
   formula <- stats::as.formula(formulatext)
-  formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(formula))), env = parent.frame()) # here we need the formula as a 'call' object
+  formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(formula))), env=parent.frame()) # here we need the formula as a 'call' object
   
   sigma.formulatext <- gsub("left_parenthesis", "(", sigma.formula, fixed = TRUE)
   sigma.formulatext <- gsub("right_parenthesis", ")", sigma.formulatext, fixed = TRUE)
@@ -113,7 +120,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   sigma.formulatext <- gsub("equal_symbol", "=", sigma.formulatext, fixed = TRUE)
   sigma.formulatext <- gsub("comma_symbol", ",", sigma.formulatext, fixed = TRUE)
   sigma.formula <- stats::as.formula(sigma.formulatext)
-  sigma.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(sigma.formula))), env = parent.frame()) # here we need the formula as a 'call' object
+  sigma.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(sigma.formula))), env=parent.frame()) # here we need the formula as a 'call' object
   
   nu.formulatext <- gsub("left_parenthesis", "(", nu.formula, fixed = TRUE)
   nu.formulatext <- gsub("right_parenthesis", ")", nu.formulatext, fixed = TRUE)
@@ -121,7 +128,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   nu.formulatext <- gsub("equal_symbol", "=", nu.formulatext, fixed = TRUE)
   nu.formulatext <- gsub("comma_symbol", ",", nu.formulatext, fixed = TRUE)
   nu.formula <- stats::as.formula(nu.formulatext)
-  nu.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(nu.formula))), env = parent.frame()) # here we need the formula as a 'call' object
+  nu.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(nu.formula))), env=parent.frame()) # here we need the formula as a 'call' object
   
   tau.formulatext <- gsub("left_parenthesis", "(", tau.formula, fixed = TRUE)
   tau.formulatext <- gsub("right_parenthesis", ")", tau.formulatext, fixed = TRUE)
@@ -129,13 +136,13 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   tau.formulatext <- gsub("equal_symbol", "=", tau.formulatext, fixed = TRUE)
   tau.formulatext <- gsub("comma_symbol", ",", tau.formulatext, fixed = TRUE)
   tau.formula <- stats::as.formula(tau.formulatext)
-  tau.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(tau.formula))), env = parent.frame()) # here we need the formula as a 'call' object
+  tau.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(tau.formula))), env=parent.frame()) # here we need the formula as a 'call' object
   
   family <- gsub("left_parenthesis", "(", family, fixed = TRUE)
   family <- gsub("right_parenthesis", ")", family, fixed = TRUE)
   family <- gsub("equal_symbol", "=", family, fixed = TRUE)
   family <- gsub("comma_symbol", ",", family, fixed = TRUE)
-  family <- gamlss.dist::as.family(eval(parse(text=family)))
+  family <- gamlss.dist::as.family(eval(parse(text=family), env=environment()))
   
   dev.function <- family$G.dev.incr
   
@@ -165,7 +172,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   for(i in 1:length(model.variables)){
     elt <- unlist(strsplit(model.variables[i], split="$", fixed=TRUE))
     if(length(elt) > 1){
-      assign(elt[length(elt)], eval(parse(text=model.variables[i]), envir = parent.frame()), envir = parent.frame())
+      assign(elt[length(elt)], eval(parse(text=model.variables[i]), env=parent.frame()), env=parent.frame())
       varnames <- append(varnames, elt[length(elt)])
     }else{
       varnames <- append(varnames, elt)
@@ -191,7 +198,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   #**************************************************************************
   
   # Identify and use variable names to count missings
-  all.data <- eval(parse(text=cbindraw.text), envir = parent.frame())
+  all.data <- eval(parse(text=cbindraw.text), env=parent.frame())
   
   Ntotal <- dim(all.data)[1]
   
@@ -206,7 +213,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   # III) Calculate matrix & vector to return to client ----  
   #**************************************************************************
   
-  #*i) Fit the model ----
+  #*A) Fit the model ----
   # Now fit model specified in formula:
   # to increase computational speed the number of inner and backfitting iterations are set to 1
   mod.gamlss.ds <- gamlss::gamlss(formula=formula2use, sigma.formula=sigma.formula2use, 
@@ -222,101 +229,96 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
                                                            bf.cyc=1, bf.tol=c2[4]))
   
   # get design matrix for the parameter
-  X.mat.orig <- as.matrix(eval(parse(text=paste("mod.gamlss.ds$", parameter, ".x", sep=""))))
+  X.mat.orig <- as.matrix(eval(parse(text=paste("mod.gamlss.ds$", parameter, ".x", sep="")), env=environment()))
   y <- as.vector(mod.gamlss.ds$y)
   
-  #*ii) Update vectors----
+  #*B) Update vectors----
   ## Calculate predictor vector eta for the parameter
   if("mu" %in% names(family$parameters)){
-    mu <- base::get("mu", envir = parent.frame())
+    mu <- base::get("mu", env=parent.frame())
   }
   if("sigma" %in% names(family$parameters)){
-    sigma <- base::get("sigma", envir = parent.frame())
+    sigma <- base::get("sigma", env=parent.frame())
   }
   if("nu" %in% names(family$parameters)){
-    nu <- base::get("nu", envir = parent.frame())
+    nu <- base::get("nu", env=parent.frame())
   }
   if("tau" %in% names(family$parameters)){
-    tau <- base::get("tau", envir = parent.frame())
+    tau <- base::get("tau", env=parent.frame())
   }
-  eta <- eval(parse(text=paste("family$", parameter, ".linkfun(", parameter, ")", sep="")))
+  eta <- eval(parse(text=paste("family$", parameter, ".linkfun(", parameter, ")", sep="")), env=environment())
   
   ## Calculate score and weights (for Fisher-scoring algorithm)
-  dr <- eval(parse(text=paste("family$", parameter, ".dr(eta)", sep="")))  # dparameter/ deta
-  dr <- 1/dr  # deta/ dparameter = 1/ (dparameter/ deta) 
-  
+  dr <- eval(parse(text=paste("family$", parameter, ".dr(eta)", sep="")), env=environment())  # dparameter/ deta
+  dr <- 1/dr  # deta/ dparameter = 1/ (dparameter/ deta)
+
   # get the first and second derivatives of the log-likelihood
   if (parameter=="mu"){
     fv <- mu
     # first derivative of log-likelihood
     dldp.function <- family$dldm
-    formals(dldp.function, envir=new.env()) <- alist(mu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    formals(dldp.function, env=new.env()) <- alist(mu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
     # second derivative of log-likelihood
     d2ldp2.function <- family$d2ldm2
-    formals(d2ldp2.function, envir=new.env()) <- alist(mu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    formals(d2ldp2.function, env=new.env()) <- alist(mu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
     # deviance
-    formals(dev.function, envir=new.env()) <- alist(mu = fv)
+    formals(dev.function, env=new.env()) <- alist(mu = fv)
   }
   if (parameter=="sigma"){
     fv <- sigma
     # first derivative of log-likelihood
     dldp.function <- family$dldd
-    formals(dldp.function, envir=new.env()) <- alist(sigma = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    formals(dldp.function, env=new.env()) <- alist(sigma = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
     # second derivative of log-likelihood
     d2ldp2.function <- family$d2ldd2
-    formals(d2ldp2.function, envir=new.env()) <- alist(sigma = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    formals(d2ldp2.function, env=new.env()) <- alist(sigma = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
     # deviance
-    formals(dev.function, envir=new.env()) <- alist(sigma = fv)
+    formals(dev.function, env=new.env()) <- alist(sigma = fv)
   }
   if (parameter=="nu"){
     fv <- nu
     # first derivative of log-likelihood
     dldp.function <- family$dldv
-    formals(dldp.function, envir=new.env()) <- alist(nu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    formals(dldp.function, env=new.env()) <- alist(nu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
     # second derivative of log-likelihood
     d2ldp2.function <- family$d2ldv2
-    formals(d2ldp2.function, envir=new.env()) <- alist(nu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    formals(d2ldp2.function, env=new.env()) <- alist(nu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
     # deviance
-    formals(dev.function, envir=new.env()) <- alist(nu = fv)
+    formals(dev.function, env=new.env()) <- alist(nu = fv)
   }
   if (parameter=="tau"){
     fv <- tau
     # first derivative of log-likelihood
     dldp.function <- family$dldt
-    formals(dldp.function, envir=new.env()) <- alist(tau = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    formals(dldp.function, env=new.env()) <- alist(tau = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
     # second derivative of log-likelihood
     d2ldp2.function <- family$d2ldt2
-    formals(d2ldp2.function, envir=new.env()) <- alist(tau = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    formals(d2ldp2.function, env=new.env()) <- alist(tau = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
     # deviance
-    formals(dev.function, envir=new.env()) <- alist(tau = fv)
+    formals(dev.function, env=new.env()) <- alist(tau = fv)
   }
-  
+
   dldp <- dldp.function(fv)  # first derivative of log-likelihood with respect to parameter
   d2ldp2 <- d2ldp2.function(fv)  # expected  second derivative of log-Likelihood with respect to parameter
-  d2ldp2 <- ifelse(d2ldp2 < -1e-15, d2ldp2, -1e-15) 
+  d2ldp2 <- ifelse(d2ldp2 < -1e-15, d2ldp2, -1e-15)
   wt <- -(d2ldp2/(dr*dr)) # weights for Fisher-scoring algorithm =-(d2l/d2p)(dparameter/deta)^2
   # we need to stop the weights to go to Infty
   wt <- ifelse(wt>1e+10,1e+10,wt)
-  wt <- ifelse(wt<1e-10,1e-10,wt) 
-  
+  wt <- ifelse(wt<1e-10,1e-10,wt)
+
   ## Update working variable vector wv
   wv <- eta+dldp/(dr*wt)
   if (family$type=="Mixed"){
     wv <-ifelse(is.nan(wv),0,wv)
   }
-  
+
+  ## Calculate partial residuals
+
   ## Calculate deviance
   di <- dev.function(fv)  # deviance increment
   dv <- sum(di)  # the global deviance on the server
+
   
-  
-  #**************************************************************************
-  # IV) Save working variable on the server  ----  
-  #**************************************************************************
-  
-  # We need to save the working variable on the server for the next iteration
-  # Since the working variable could be disclosive we keep it on the server and do not
-  # reveal it to the client
   
   
   
