@@ -163,22 +163,27 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   # The minimum and maximum are needed to use same knots on all servers during the fitting of the 
   # smoothing terms
   # Note that for simplicity at the moment only probabilistic anonymization is implemented
-  pb.xmin <- rep(NA, length(pb.names))
-  pb.xmax <- rep(NA, length(pb.names))
-  for (i in 1:length(pb.names)){
-    x <- eval(parse(text=pb.names[i]), env=parent.frame())
-    # the study-specific seed for random number generation
-    seed <- getOption("datashield.seed")
-    if (is.null(seed)){
-      stop("gamlssDS1 with pb-smoothers requires 'datashield.seed' R option to operate", call.=FALSE)
-    }else{
-      set.seed(seed)
-      x.new <- x + stats::rnorm(n=length(x), mean=0, sd=sqrt(nfilter.noise*stats::var(x)))
-      pb.xmin[i] <- min(x.new)
-      pb.xmax[i] <- max(x.new)
+  if(length(pb.names)>0){  # the mode includes pb-smoothers
+    pb.xmin <- rep(NA, length(pb.names))
+    pb.xmax <- rep(NA, length(pb.names))
+    for (i in 1:length(pb.names)){
+      x <- eval(parse(text=pb.names[i]), env=parent.frame())
+      # the study-specific seed for random number generation
+      seed <- getOption("datashield.seed")
+      if (is.null(seed)){
+        stop("gamlssDS1 with pb-smoothers requires 'datashield.seed' R option to operate", call.=FALSE)
+      }else{
+        set.seed(seed)
+        x.new <- x + stats::rnorm(n=length(x), mean=0, sd=sqrt(nfilter.noise*stats::var(x)))
+        pb.xmin[i] <- min(x.new)
+        pb.xmax[i] <- max(x.new)
+      }
     }
+  }else{  # the model does not include pb-smoothers
+    pb.xmin <- NULL
+    pb.xmax <- NULL
   }
-  
+
   # get the length of the gamma vectors
   # mu
   mu.gamma.length <- NULL

@@ -13,7 +13,7 @@
 #' @keywords internal
 #' @author Annika Swenne
 
-bbase <- function(x, xl, xr, ndx=20, deg=3, quantiles=FALSE){
+bbase <- function(x, xl, xr, ndx=20, deg=3){
   
   #**************************************************************************
   #I) Define functions----  

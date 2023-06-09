@@ -5,25 +5,31 @@
 \title{gamlssDS2 called by ds.gamlss}
 \usage{
 gamlssDS2(
+  parameter = parameter,
   formula = formula,
   sigma.formula = sigma.formula,
   nu.formula = nu.formula,
   tau.formula = tau.formula,
   family = family,
   data = data,
-  mu.fix = mu.fix,
-  sigma.fix = sigma.fix,
-  nu.fix = nu.fix,
-  tau.fix = tau.fix,
   mu.beta.vect = mu.beta.vect,
   sigma.beta.vect = sigma.beta.vect,
   nu.beta.vect = nu.beta.vect,
   tau.beta.vect = tau.beta.vect,
+  mu.gamma.vect = mu.gamma.vect,
+  sigma.gamma.vect = sigma.gamma.vect,
+  nu.gamma.vect = nu.gamma.vect,
+  tau.gamma.vect = tau.gamma.vect,
+  pb.xl = pb.xl,
+  pb.xr = pb.xr,
   control = control,
   i.control = i.control
 )
 }
 \arguments{
+\item{parameter}{a string specifing for which of the model parameters "mu", "sigma", "nu"
+or "tau" the model fitting should be performed}
+
 \item{formula}{a formula object, with the response on the left of an ~ operator, 
 and the terms, separated by + operators, on the right. Nonparametric smoothing
 terms are indicated by pb() for penalised beta splines, cs for smoothing splines, 
@@ -48,18 +54,6 @@ i.e. BI. Family functions can take arguments, as in BI(mu.link=probit).}
 \item{data}{an optional character string specifying a data.frame object holding 
 the data to be analysed under the specified model}
 
-\item{mu.fix}{logical, indicate whether the mu parameter should be kept fixed
-in the fitting processes.}
-
-\item{sigma.fix}{logical, indicate whether the sigma parameter should be kept
-fixed in the fitting processes.}
-
-\item{nu.fix}{logical, indicate whether the nu parameter should be kept fixed 
-in the fitting processes.}
-
-\item{tau.fix}{logical, indicate whether the tau parameter should be kept fixed
-in the fitting processes.}
-
 \item{mu.beta.vect}{a numeric vector created by the clientside function specifying the
 vector of regression coefficients for mu at the current iteration.}
 
@@ -71,6 +65,24 @@ vector of regression coefficients for nu at the current iteration.}
 
 \item{tau.beta.vect}{a numeric vector created by the clientside function specifying the
 vector of regression coefficients for tau at the current iteration.}
+
+\item{mu.gamma.vect}{a numeric vector created by the clientside function specifying the
+vector of smoothing regression coefficients for mu at the current iteration.}
+
+\item{sigma.gamma.vect}{a numeric vector created by the clientside function specifying the
+vector of smoothing regression coefficients for sigma at the current iteration.}
+
+\item{nu.gamma.vect}{a numeric vector created by the clientside function specifying the
+vector of smoothing regression coefficients for nu at the current iteration.}
+
+\item{tau.gamma.vect}{a numeric vector created by the clientside function specifying the
+vector of smoothing regression coefficients for tau at the current iteration.}
+
+\item{pb.xl}{a numeric vector created by the clientside function specifying the left
+boundary for the knots for the pb-smoother.}
+
+\item{pb.xr}{a numeric vector created by the clientside function specifying the right
+boundary for the knots for the pb-smoother.}
 
 \item{control}{this sets the control parameters of the outer iterations algorithm 
 using the gamlss.control function. This is a vector of 7 numeric values: (i) c.crit 
@@ -88,6 +100,18 @@ cycles of the algorithm), (iii) bf.cyc (the number of cycles of the backfitting
 algorithm), (iv) bf.tol (the convergence criterion (tolerance level) for the 
 backfitting algorithm). The default values for these 4 parameters are set to 
 c(0.001, 50, 30, 0.001).}
+
+\item{mu.fix}{logical, indicate whether the mu parameter should be kept fixed
+in the fitting processes.}
+
+\item{sigma.fix}{logical, indicate whether the sigma parameter should be kept
+fixed in the fitting processes.}
+
+\item{nu.fix}{logical, indicate whether the nu parameter should be kept fixed 
+in the fitting processes.}
+
+\item{tau.fix}{logical, indicate whether the tau parameter should be kept fixed
+in the fitting processes.}
 }
 \value{
 a gamlss object with all components as in the native R gamlss function. 
