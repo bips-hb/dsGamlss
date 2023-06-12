@@ -298,12 +298,6 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
     s <- rep(0, times=Ntotal)
   }
   
-  if(length(pb.names.parameter)>0){
-    
-  }else{
-    
-  }
-  
   #*B) Update vectors----
   ## Calculate predictor vector eta for the parameter
   if("mu" %in% names(family$parameters)){
@@ -383,19 +377,215 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   if (family$type=="Mixed"){
     wv <-ifelse(is.nan(wv),0,wv)
   }
+  
+  #*C) Calculate matrix & vectors ----
 
   ## Calculate partial residuals
   partial.residuals <- wv - base::rowSums(s)
+  
+  ## Calculate matrix and vector to return to the client
+  vector <- t(X.mat) %*% (wt*partial.residuals)
+  matrix <- t(X.mat) %*% diag(wt) %*% X.mat
+  # remove the dimnames attributes
+  attr(vector, "dimnames") <- NULL
+  attr(matrix, "dimnames") <- NULL
 
   ## Calculate deviance
   di <- dev.function(fv)  # deviance increment
   dv <- sum(di)  # the global deviance on the server
-
+  
+  #**************************************************************************
+  # IV) Backup disclosure risk----
+  # If y, X or w data are invalid but user has modified clientside
+  # function (ds.gamlss) to circumvent trap, model will get to this point without
+  # giving a controlled shut down with a warning about invalid data.
+  # So as a safety measure, we will now use the same test that is used to
+  # trigger a controlled trap in the clientside function to destroy the
+  # score.vector and information.matrix in the study with the problem.
+  # So this will make model fail without explanation
+  
+  # Disclosure code from gamlssDS1
+  #**************************************************************************
+  
+  errorMessage.combined <- NULL
+  disclosure.risk <- 0
+  
+  mu.x <- mod.gamlss.ds$mu.x
+  sigma.x <- mod.gamlss.ds$sigma.x
+  nu.x <- mod.gamlss.ds$nu.x
+  tau.x <- mod.gamlss.ds$tau.x
+  dim.mu.x <- dim(mu.x)
+  dim.sigma.x <- dim(sigma.x)
+  dim.nu.x <- dim(nu.x)
+  dim.tau.x <- dim(tau.x)
+  
+  #*A) Oversaturated model----
+  # (test against nfilter.glm)
+  gamlss.saturation.invalid <- 0
+  num.n <- mod.gamlss.ds$N
+  num.mu.p <- dim.mu.x[2]
+  num.sigma.p <- dim.sigma.x[2]
+  num.nu.p <- dim.nu.x[2]
+  num.tau.p <- dim.tau.x[2]
+  
+  if(mod.gamlss.ds$df.fit > nfilter.glm*num.n){
+    gamlss.saturation.invalid <- 1
+    errorMessage.combined <- c(errorMessage.combined,
+                               "ERROR: Model has too many parameters, there is a possible risk of disclosure - please simplify model")
+  }
+  
+  if(!is.null(num.mu.p)){
+    if(num.mu.p > nfilter.glm*num.n){
+      gamlss.saturation.invalid <- 1
+      errorMessage.combined <- c(errorMessage.combined,
+                                 "ERROR: Model for mu has too many parameters, there is a possible risk of disclosure - please simplify model")
+    }
+  }
+  
+  if(!is.null(num.sigma.p)){
+    if(num.sigma.p > nfilter.glm*num.n){
+      gamlss.saturation.invalid <- 1
+      errorMessage.combined <- c(errorMessage.combined,
+                                 "ERROR: Model for sigma has too many parameters, there is a possible risk of disclosure - please simplify model")
+    }
+  }
+  
+  if(!is.null(num.nu.p)){
+    if(num.nu.p > nfilter.glm*num.n){
+      gamlss.saturation.invalid <- 1
+      errorMessage.combined <- c(errorMessage.combined,
+                                 "ERROR: Model for nu has too many parameters, there is a possible risk of disclosure - please simplify model")
+    }
+  }
+  
+  if(!is.null(num.tau.p)){
+    if(num.tau.p > nfilter.glm*num.n){
+      gamlss.saturation.invalid <- 1
+      errorMessage.combined <- c(errorMessage.combined,
+                                 "ERROR: Model for tau has too many parameters, there is a possible risk of disclosure - please simplify model")
+    }
+  }
+  
+  #*B) Invalid y, mu.x, sigma.x, nu.x or tau.x ----
+  # If y, X or w data are invalid but user has modified clientside
+  # function (ds.gamlss) to circumvent trap, model will get to this point without
+  # giving a controlled shut down with a warning about invalid data.
+  # So as a safety measure, we will now use the same test that is used to
+  # trigger a controlled trap in the clientside function to destroy the
+  # score.vector and information.matrix in the study with the problem.
+  
+  ## check y vector validity
+  y.invalid <- 0
+  
+  # count number of unique non-missing values (disclosure risk only arises with two levels)
+  unique.values.noNA.y <- unique(y[stats::complete.cases(y)])
+  
+  # if two levels, check whether either level 0 < n < nfilter.tab
+  if(length(unique.values.noNA.y)==2){
+    tabvar <- table(y)[table(y)>=1]  # tabvar counts n in all categories with at least one observation
+    min.category <- min(tabvar)
+    if(min.category < nfilter.tab){
+      y.invalid <- 1
+      errorMessage.combined <- c(errorMessage.combined,
+                                 "ERROR: y vector is binary with one category less than filter threshold for table cell size")
+    }
+  }
+  
+  ## check validity of design matrices
+  # Check no dichotomous X vectors with between 1 and filter.threshold
+  # observations at either level
+  
+  # mu
+  mu.par.invalid <- NULL
+  if(!is.null(num.mu.p)){
+    mu.par.invalid <- rep(0, times=num.mu.p)
+    for(pj in 1:num.mu.p){
+      unique.values.noNA <- unique((mu.x[,pj])[stats::complete.cases(mu.x[,pj])])
+      if(length(unique.values.noNA)==2){
+        tabvar <- table(mu.x[,pj])[table(mu.x[,pj])>=1]  # tabvar counts n in all categories with at least one observation
+        min.category <- min(tabvar)
+        if(min.category < nfilter.tab){
+          mu.par.invalid[pj] <- 1
+          errorMessage.combined <- c(errorMessage.combined, 
+                                     "ERROR: at least one column in mu.x matrix is binary with one category less than filter threshold for table cell size")
+        }
+      }
+    }
+  }
+  
+  # sigma
+  sigma.par.invalid <- NULL
+  if(!is.null(num.sigma.p)){
+    sigma.par.invalid <- rep(0, times=num.sigma.p)
+    for(pj in 1:num.sigma.p){
+      unique.values.noNA <- unique((sigma.x[,pj])[stats::complete.cases(sigma.x[,pj])])
+      if(length(unique.values.noNA)==2){
+        tabvar <- table(sigma.x[,pj])[table(sigma.x[,pj])>=1]  # tabvar counts n in all categories with at least one observation
+        min.category <- min(tabvar)
+        if(min.category < nfilter.tab){
+          sigma.par.invalid[pj] <- 1
+          errorMessage.combined <- c(errorMessage.combined,
+                                     "ERROR: at least one column in sigma.x matrix is binary with one category less than filter threshold for table cell size")
+        }
+      }
+    }
+  }
+  
+  # nu
+  nu.par.invalid <- NULL
+  if(!is.null(num.nu.p)){
+    nu.par.invalid <- rep(0, times=num.nu.p)
+    for(pj in 1:num.nu.p){
+      unique.values.noNA <- unique((nu.x[,pj])[stats::complete.cases(nu.x[,pj])])
+      if(length(unique.values.noNA)==2){
+        tabvar <- table(nu.x[,pj])[table(nu.x[,pj])>=1]  # tabvar counts n in all categories with at least one observation
+        min.category <- min(tabvar)
+        if(min.category < nfilter.tab){
+          nu.par.invalid[pj] <- 1
+          errorMessage.combined <- c(errorMessage.combined,
+                                     "ERROR: at least one column in nu.x matrix is binary with one category less than filter threshold for table cell size")
+        }
+      }
+    }
+  }
+  
+  # tau
+  tau.par.invalid <- NULL
+  if(!is.null(num.tau.p)){
+    tau.par.invalid <- rep(0, times=num.tau.p)
+    for(pj in 1:num.tau.p){
+      unique.values.noNA <- unique((tau.x[,pj])[stats::complete.cases(tau.x[,pj])])
+      if(length(unique.values.noNA)==2){
+        tabvar <- table(tau.x[,pj])[table(tau.x[,pj])>=1]  # tabvar counts n in all categories with at least one observation
+        min.category <- min(tabvar)
+        if(min.category < nfilter.tab){
+          tau.par.invalid[pj] <- 1
+          errorMessage.combined <- c(errorMessage.combined, 
+                                     "ERROR: at least one column in tau.x matrix is binary with one category less than filter threshold for table cell size")
+        }
+      }
+    }
+  }
+  
+  #*C) Combine disclosure risks----
+  # If there is a disclosure risk destroy the matrix and vector (that should be returned to the client)
+  if(!(y.invalid>0 || sum(mu.par.invalid)>0|| sum(sigma.par.invalid)>0 || sum(nu.par.invalid)>0 ||
+       sum(tau.par.invalid)>0 || gamlss.saturation.invalid>0)){
+    errorMessage.combined <- "No errors"
+  }else{
+    info.matrix <- NA
+    score.vector <- NA
+    disclosure.risk <- 1
+    errorMessage.combined <- c(errorMessage.combined, "MODEL FAILED: model or data invalid, matrix and vector destroyed")
+  }
   
   
+  #**************************************************************************
+  # V) Output ----
+  #**************************************************************************
   
-  
-  
+  return(list(matrix=matrix, vector=vector, dv=dv, disclosure.risk=disclosure.risk,
+              errorMessage2=errorMessage.combined))
   
 } 
 # AGGREGATE FUNCTION

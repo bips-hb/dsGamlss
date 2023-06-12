@@ -266,28 +266,28 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   if(!is.null(num.mu.p)){
     if(num.mu.p > nfilter.glm*num.n){
       gamlss.saturation.invalid <- 1
-      errorMessage <- "ERROR: Model has too many parameters, there is a possible risk of disclosure - please simplify model"
+      errorMessage <- "ERROR: Modelfor mu has too many parameters, there is a possible risk of disclosure - please simplify model"
     }
   }
 
   if(!is.null(num.sigma.p)){
     if(num.sigma.p > nfilter.glm*num.n){
       gamlss.saturation.invalid <- 1
-      errorMessage <- "ERROR: Model has too many parameters, there is a possible risk of disclosure - please simplify model"
+      errorMessage <- "ERROR: Model for sigma has too many parameters, there is a possible risk of disclosure - please simplify model"
     }
   }
 
   if(!is.null(num.nu.p)){
     if(num.nu.p > nfilter.glm*num.n){
       gamlss.saturation.invalid <- 1
-      errorMessage <- "ERROR: Model has too many parameters, there is a possible risk of disclosure - please simplify model"
+      errorMessage <- "ERROR: Model for nu has too many parameters, there is a possible risk of disclosure - please simplify model"
     }
   }
 
   if(!is.null(num.tau.p)){
     if(num.tau.p > nfilter.glm*num.n){
       gamlss.saturation.invalid <- 1
-      errorMessage <- "ERROR: Model has too many parameters, there is a possible risk of disclosure - please simplify model"
+      errorMessage <- "ERROR: Model for tau has too many parameters, there is a possible risk of disclosure - please simplify model"
     }
   }
 
