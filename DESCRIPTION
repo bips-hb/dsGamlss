@@ -4,9 +4,13 @@ Author: <swenne@leibniz-bips.de>
 Version: 1.0.0
 License: GPL-3
 Title: DataSHIELD server side functions for GAMLSS
-Description: DataSHIELD server side functions to fit Generalized Additive Models for Location, Scale and Shape
+Description: DataSHIELD server side functions to fit Generalized Additive Models for Location, Scale and Shape.
+Depends: gamlss, 
+         gamlss.dist
 AggregateMethods: gamlssDS1,
-                  gamlssDS2
+                  gamlssDS2,
+                  gamlssDS3
 AssignMethods: 
 Options: datashield.privacyLevel=5
 RoxygenNote: 7.2.3
+Encoding: UTF-8

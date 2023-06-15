@@ -2,5 +2,6 @@
 
 export(gamlssDS1)
 export(gamlssDS2)
+export(gamlssDS3)
 import(gamlss)
 import(gamlss.dist)

@@ -1,15 +1,13 @@
 #'
-#' @title gamlssDS2 called by ds.gamlss
-#' @description This is the second serverside aggregate function called by ds.gamlss.
+#' @title gamlssDS3 called by ds.gamlss
+#' @description This is the third serverside aggregate function called by ds.gamlss.
 #' @details It is an aggregation function that that uses the model structure and starting
-#' parameter vectors constructed by gamlssDS1 to iteratively obtain the WLSE for beta.
-#' The function gamlssDS2 also carries out a series of disclosure checks and if
-#' the arguments or data fail any of those tests, model construction is blocked and an 
-#' appropriate serverside error message is created and returned to ds.gamlss on the 
-#' clientside. For more details please see the extensive header of ds.gamlss and also the
+#' parameter vectors constructed by gamlssDS1 to iteratively obtain the PWLSE for gamma.
+#' For more details please see the extensive header of ds.gamlss and also the
 #' gamlss function in native R gamlss package.
 #' @param parameter a string specifing for which of the model parameters "mu", "sigma", "nu"
 #' or "tau" the model fitting should be performed
+#' @param smoother an integer indicating the number of the smoother that should be fitted
 #' @param formula a formula object, with the response on the left of an ~ operator, 
 #' and the terms, separated by + operators, on the right. Nonparametric smoothing
 #' terms are indicated by pb() for penalised beta splines, cs for smoothing splines, 
@@ -81,9 +79,10 @@
 #' @export
 #'
 
-gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = sigma.formula,
-                      nu.formula = nu.formula, tau.formula = tau.formula, family = family, 
-                      data = data, mu.beta.vect = mu.beta.vect, sigma.beta.vect = sigma.beta.vect,
+gamlssDS3 <- function(parameter = parameter, smoother = smoother, formula = formula, 
+                      sigma.formula = sigma.formula, nu.formula = nu.formula, 
+                      tau.formula = tau.formula, family = family, data = data, 
+                      mu.beta.vect = mu.beta.vect, sigma.beta.vect = sigma.beta.vect,
                       nu.beta.vect = nu.beta.vect, tau.beta.vect = tau.beta.vect,
                       mu.gamma.vect = mu.gamma.vect, sigma.gamma.vect = sigma.gamma.vect,
                       nu.gamma.vect = nu.gamma.vect, tau.gamma.vect = tau.gamma.vect,
@@ -97,11 +96,6 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   # Get function to calculate deviance increment
   #**************************************************************************
   
-  ## Capture the nfilter settings
-  thr <- dsBase::listDisclosureSettingsDS()
-  nfilter.tab <- as.numeric(thr$nfilter.tab)
-  nfilter.glm <- as.numeric(thr$nfilter.glm)
-  
   ## Get the value of the 'data' parameter provided as character on the client side
   dataname <- data
   if(is.null(dataname)){
@@ -109,6 +103,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   }else{
     data <- eval(parse(text=dataname), env=parent.frame())
   }
+  Ntotal <- dim(data)[1]
   
   ## Reconvert the special symbols to create the appropriate formula, gamlss.family objects, beta & gamma vectors
   formulatext <- gsub("left_parenthesis", "(", formula, fixed = TRUE)
@@ -171,68 +166,8 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   pb.xl <- as.numeric(unlist(strsplit(pb.xl, split=",")))
   pb.xr <- as.numeric(unlist(strsplit(pb.xr, split=",")))
   
-  ## Get the variable names
-  # Rewrite formulas extracting variables nested in structures like data frame or list
-  # (e.g. D$A~D$B will be re-written A~B)
-  # Note final product is a list of the variables in the model (yvector and covariates)
-  # it is NOT a list of model terms - these are derived later
-  
-  # Convert formula strings into separate variable names split by |
-  formulas <- paste(formulatext, sigma.formulatext, nu.formulatext, tau.formulatext, sep="|")
-  formulas <- gsub("pb(", "", formulas, fixed=TRUE) 
-  formulas <- gsub(")", "", formulas, fixed=TRUE) 
-  formulas <- gsub(" ", "", formulas, fixed=TRUE)
-  formulas <- gsub("~", "|", formulas, fixed=TRUE)
-  formulas <- gsub("+", "|", formulas, fixed=TRUE)
-  formulas <- gsub("*", "|", formulas, fixed=TRUE)
-  formulas <- gsub("||", "|", formulas, fixed=TRUE)
-  
-  # Remember model.variables and then varnames include both yvect and linear predictor components 
-  model.variables <- unlist(strsplit(formulas, split="|", fixed=TRUE))
-
-  varnames <- c()
-  for(i in 1:length(model.variables)){
-    elt <- unlist(strsplit(model.variables[i], split="$", fixed=TRUE))
-    if(length(elt) > 1){
-      assign(elt[length(elt)], eval(parse(text=model.variables[i]), env=parent.frame()), env=parent.frame())
-      varnames <- append(varnames, elt[length(elt)])
-    }else{
-      varnames <- append(varnames, elt)
-    }
-  }
-  varnames <- unique(varnames)
-  
-  if(!is.null(dataname)){
-    for(v in 1:length(varnames)){
-      varnames[v] <- paste0(dataname,"$",varnames[v])
-      test.string.0 <- paste0(dataname,"$","0")
-      test.string.1 <- paste0(dataname,"$","1")
-      if(varnames[v]==test.string.0) varnames[v] <- "0"
-      if(varnames[v]==test.string.1) varnames[v] <- "1"
-    }
-    cbindraw.text <- paste0("cbind(", paste(varnames, collapse=","), ")")
-  }else{
-    cbindraw.text <- paste0("cbind(", paste(varnames, collapse=","), ")")
-  }
-  
   #**************************************************************************
-  # II) Identify missings----  
-  #**************************************************************************
-  
-  # Identify and use variable names to count missings
-  all.data <- eval(parse(text=cbindraw.text), env=parent.frame())
-  
-  Ntotal <- dim(all.data)[1]
-  
-  nomiss.any <- stats::complete.cases(all.data)
-  nomiss.any.data <- all.data[nomiss.any,]
-  N.nomiss.any <- dim(nomiss.any.data)[1]
-  
-  Nvalid <- N.nomiss.any
-  Nmissing <- Ntotal-Nvalid
-  
-  #**************************************************************************
-  # III) Calculate matrix & vector to return to client ----  
+  # II) Calculate matrix & vector to return to client ----  
   #**************************************************************************
   
   #*A) Fit the model ----
@@ -281,6 +216,8 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
       base::assign(paste("Z", i, ".mat", sep=""), basismatrix, env=environment())
     }
   }
+  # save the design matrix for the current smoother for convenience
+  Z.mat <- eval(parse(text=paste("Z", i, ".mat", sep="")), env=environment())
   
   ## calculate smoothing fitted value matrix s
   # get the gamma vectors for the respective parameter & multiply them with the matrices
@@ -320,7 +257,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   ## Calculate score and weights (for Fisher-scoring algorithm)
   dr <- eval(parse(text=paste("family$", parameter, ".dr(eta)", sep="")), env=environment())  # dparameter/ deta
   dr <- 1/dr  # deta/ dparameter = 1/ (dparameter/ deta)
-
+  
   # get the first and second derivatives of the log-likelihood
   if (parameter=="mu"){
     fv <- mu
@@ -366,7 +303,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
     # deviance
     formals(dev.function, env=new.env()) <- alist(tau = fv)
   }
-
+  
   dldp <- dldp.function(fv)  # first derivative of log-likelihood with respect to parameter
   d2ldp2 <- d2ldp2.function(fv)  # expected  second derivative of log-Likelihood with respect to parameter
   d2ldp2 <- ifelse(d2ldp2 < -1e-15, d2ldp2, -1e-15)
@@ -374,7 +311,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   # we need to stop the weights to go to Infty
   wt <- ifelse(wt>1e+10,1e+10,wt)
   wt <- ifelse(wt<1e-10,1e-10,wt)
-
+  
   ## Update working variable vector wv
   wv <- eta+dldp/(dr*wt)
   if (family$type=="Mixed"){
@@ -382,216 +319,29 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   }
   
   #*C) Calculate matrix & vectors ----
-
+  
   ## Calculate partial residuals
-  partial.residuals <- wv - base::rowSums(s)
+  partial.residuals <- wv - X.mat %*% beta.vect - base::rowSums(as.matrix(s[,-smoother]))
   
   ## Calculate matrix and vector to return to the client
-  vector <- t(X.mat) %*% (wt*partial.residuals)
-  matrix <- t(X.mat) %*% diag(wt) %*% X.mat
+  vector <- t(Z.mat) %*% (wt*partial.residuals)
+  matrix <- t(Z.mat) %*% diag(wt) %*% Z.mat
   # remove the dimnames attributes
   attr(vector, "dimnames") <- NULL
   attr(matrix, "dimnames") <- NULL
-
+  
   ## Calculate deviance
   di <- dev.function(fv)  # deviance increment
   dv <- sum(di)  # the global deviance on the server
   
-  #**************************************************************************
-  # IV) Backup disclosure risk----
-  # If y, X or w data are invalid but user has modified clientside
-  # function (ds.gamlss) to circumvent trap, model will get to this point without
-  # giving a controlled shut down with a warning about invalid data.
-  # So as a safety measure, we will now use the same test that is used to
-  # trigger a controlled trap in the clientside function to destroy the
-  # score.vector and information.matrix in the study with the problem.
-  # So this will make model fail without explanation
-  
-  # Disclosure code from gamlssDS1
-  #**************************************************************************
-  
-  errorMessage.combined <- NULL
-  disclosure.risk <- 0
-  
-  mu.x <- mod.gamlss.ds$mu.x
-  sigma.x <- mod.gamlss.ds$sigma.x
-  nu.x <- mod.gamlss.ds$nu.x
-  tau.x <- mod.gamlss.ds$tau.x
-  dim.mu.x <- dim(mu.x)
-  dim.sigma.x <- dim(sigma.x)
-  dim.nu.x <- dim(nu.x)
-  dim.tau.x <- dim(tau.x)
-  
-  #*A) Oversaturated model----
-  # (test against nfilter.glm)
-  gamlss.saturation.invalid <- 0
-  num.n <- mod.gamlss.ds$N
-  num.mu.p <- dim.mu.x[2]
-  num.sigma.p <- dim.sigma.x[2]
-  num.nu.p <- dim.nu.x[2]
-  num.tau.p <- dim.tau.x[2]
-  
-  if(mod.gamlss.ds$df.fit > nfilter.glm*num.n){
-    gamlss.saturation.invalid <- 1
-    errorMessage.combined <- c(errorMessage.combined,
-                               "ERROR: Model has too many parameters, there is a possible risk of disclosure - please simplify model")
-  }
-  
-  if(!is.null(num.mu.p)){
-    if(num.mu.p > nfilter.glm*num.n){
-      gamlss.saturation.invalid <- 1
-      errorMessage.combined <- c(errorMessage.combined,
-                                 "ERROR: Model for mu has too many parameters, there is a possible risk of disclosure - please simplify model")
-    }
-  }
-  
-  if(!is.null(num.sigma.p)){
-    if(num.sigma.p > nfilter.glm*num.n){
-      gamlss.saturation.invalid <- 1
-      errorMessage.combined <- c(errorMessage.combined,
-                                 "ERROR: Model for sigma has too many parameters, there is a possible risk of disclosure - please simplify model")
-    }
-  }
-  
-  if(!is.null(num.nu.p)){
-    if(num.nu.p > nfilter.glm*num.n){
-      gamlss.saturation.invalid <- 1
-      errorMessage.combined <- c(errorMessage.combined,
-                                 "ERROR: Model for nu has too many parameters, there is a possible risk of disclosure - please simplify model")
-    }
-  }
-  
-  if(!is.null(num.tau.p)){
-    if(num.tau.p > nfilter.glm*num.n){
-      gamlss.saturation.invalid <- 1
-      errorMessage.combined <- c(errorMessage.combined,
-                                 "ERROR: Model for tau has too many parameters, there is a possible risk of disclosure - please simplify model")
-    }
-  }
-  
-  #*B) Invalid y, mu.x, sigma.x, nu.x or tau.x ----
-  # If y, X or w data are invalid but user has modified clientside
-  # function (ds.gamlss) to circumvent trap, model will get to this point without
-  # giving a controlled shut down with a warning about invalid data.
-  # So as a safety measure, we will now use the same test that is used to
-  # trigger a controlled trap in the clientside function to destroy the
-  # score.vector and information.matrix in the study with the problem.
-  
-  ## check y vector validity
-  y.invalid <- 0
-  
-  # count number of unique non-missing values (disclosure risk only arises with two levels)
-  unique.values.noNA.y <- unique(y[stats::complete.cases(y)])
-  
-  # if two levels, check whether either level 0 < n < nfilter.tab
-  if(length(unique.values.noNA.y)==2){
-    tabvar <- table(y)[table(y)>=1]  # tabvar counts n in all categories with at least one observation
-    min.category <- min(tabvar)
-    if(min.category < nfilter.tab){
-      y.invalid <- 1
-      errorMessage.combined <- c(errorMessage.combined,
-                                 "ERROR: y vector is binary with one category less than filter threshold for table cell size")
-    }
-  }
-  
-  ## check validity of design matrices
-  # Check no dichotomous X vectors with between 1 and filter.threshold
-  # observations at either level
-  
-  # mu
-  mu.par.invalid <- NULL
-  if(!is.null(num.mu.p)){
-    mu.par.invalid <- rep(0, times=num.mu.p)
-    for(pj in 1:num.mu.p){
-      unique.values.noNA <- unique((mu.x[,pj])[stats::complete.cases(mu.x[,pj])])
-      if(length(unique.values.noNA)==2){
-        tabvar <- table(mu.x[,pj])[table(mu.x[,pj])>=1]  # tabvar counts n in all categories with at least one observation
-        min.category <- min(tabvar)
-        if(min.category < nfilter.tab){
-          mu.par.invalid[pj] <- 1
-          errorMessage.combined <- c(errorMessage.combined, 
-                                     "ERROR: at least one column in mu.x matrix is binary with one category less than filter threshold for table cell size")
-        }
-      }
-    }
-  }
-  
-  # sigma
-  sigma.par.invalid <- NULL
-  if(!is.null(num.sigma.p)){
-    sigma.par.invalid <- rep(0, times=num.sigma.p)
-    for(pj in 1:num.sigma.p){
-      unique.values.noNA <- unique((sigma.x[,pj])[stats::complete.cases(sigma.x[,pj])])
-      if(length(unique.values.noNA)==2){
-        tabvar <- table(sigma.x[,pj])[table(sigma.x[,pj])>=1]  # tabvar counts n in all categories with at least one observation
-        min.category <- min(tabvar)
-        if(min.category < nfilter.tab){
-          sigma.par.invalid[pj] <- 1
-          errorMessage.combined <- c(errorMessage.combined,
-                                     "ERROR: at least one column in sigma.x matrix is binary with one category less than filter threshold for table cell size")
-        }
-      }
-    }
-  }
-  
-  # nu
-  nu.par.invalid <- NULL
-  if(!is.null(num.nu.p)){
-    nu.par.invalid <- rep(0, times=num.nu.p)
-    for(pj in 1:num.nu.p){
-      unique.values.noNA <- unique((nu.x[,pj])[stats::complete.cases(nu.x[,pj])])
-      if(length(unique.values.noNA)==2){
-        tabvar <- table(nu.x[,pj])[table(nu.x[,pj])>=1]  # tabvar counts n in all categories with at least one observation
-        min.category <- min(tabvar)
-        if(min.category < nfilter.tab){
-          nu.par.invalid[pj] <- 1
-          errorMessage.combined <- c(errorMessage.combined,
-                                     "ERROR: at least one column in nu.x matrix is binary with one category less than filter threshold for table cell size")
-        }
-      }
-    }
-  }
-  
-  # tau
-  tau.par.invalid <- NULL
-  if(!is.null(num.tau.p)){
-    tau.par.invalid <- rep(0, times=num.tau.p)
-    for(pj in 1:num.tau.p){
-      unique.values.noNA <- unique((tau.x[,pj])[stats::complete.cases(tau.x[,pj])])
-      if(length(unique.values.noNA)==2){
-        tabvar <- table(tau.x[,pj])[table(tau.x[,pj])>=1]  # tabvar counts n in all categories with at least one observation
-        min.category <- min(tabvar)
-        if(min.category < nfilter.tab){
-          tau.par.invalid[pj] <- 1
-          errorMessage.combined <- c(errorMessage.combined, 
-                                     "ERROR: at least one column in tau.x matrix is binary with one category less than filter threshold for table cell size")
-        }
-      }
-    }
-  }
-  
-  #*C) Combine disclosure risks----
-  # If there is a disclosure risk destroy the matrix and vector (that should be returned to the client)
-  if(!(y.invalid>0 || sum(mu.par.invalid)>0|| sum(sigma.par.invalid)>0 || sum(nu.par.invalid)>0 ||
-       sum(tau.par.invalid)>0 || gamlss.saturation.invalid>0)){
-    errorMessage.combined <- "No errors"
-  }else{
-    info.matrix <- NA
-    score.vector <- NA
-    disclosure.risk <- 1
-    errorMessage.combined <- c(errorMessage.combined, "MODEL FAILED: model or data invalid, matrix and vector destroyed")
-  }
-  
   
   #**************************************************************************
-  # V) Output ----
+  # III) Output ----
   #**************************************************************************
   
-  return(list(matrix=matrix, vector=vector, dv=dv, disclosure.risk=disclosure.risk,
-              errorMessage2=errorMessage.combined))
+  return(list(matrix=matrix, vector=vector, dv=dv))
   
 } 
 # AGGREGATE FUNCTION
-# gamlssDS2
-
+# gamlssDS3
 
