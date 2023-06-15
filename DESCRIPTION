@@ -9,7 +9,8 @@ Depends: gamlss,
          gamlss.dist
 AggregateMethods: gamlssDS1,
                   gamlssDS2,
-                  gamlssDS3
+                  gamlssDS3,
+                  gamlssDS4
 AssignMethods: 
 Options: datashield.privacyLevel=5
 RoxygenNote: 7.2.3

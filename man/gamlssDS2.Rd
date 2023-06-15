@@ -123,7 +123,7 @@ the client-side.
 This is the second serverside aggregate function called by ds.gamlss.
 }
 \details{
-It is an aggregation function that that uses the model structure and starting
+It is an aggregation function that uses the model structure and starting
 parameter vectors constructed by gamlssDS1 to iteratively obtain the WLSE for beta.
 The function gamlssDS2 also carries out a series of disclosure checks and if
 the arguments or data fail any of those tests, model construction is blocked and an 

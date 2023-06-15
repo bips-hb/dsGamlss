@@ -1,7 +1,7 @@
 #'
 #' @title gamlssDS3 called by ds.gamlss
 #' @description This is the third serverside aggregate function called by ds.gamlss.
-#' @details It is an aggregation function that that uses the model structure and starting
+#' @details It is an aggregation function that uses the model structure and starting
 #' parameter vectors constructed by gamlssDS1 to iteratively obtain the PWLSE for gamma.
 #' For more details please see the extensive header of ds.gamlss and also the
 #' gamlss function in native R gamlss package.
