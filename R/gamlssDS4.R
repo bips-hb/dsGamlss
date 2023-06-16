@@ -6,7 +6,6 @@
 #' gamlss function in native R gamlss package.
 #' @param parameter a string specifing for which of the model parameters "mu", "sigma", "nu"
 #' or "tau" the model fitting should be performed
-#' @param smoother an integer indicating the number of the smoother that should be fitted
 #' @param formula a formula object, with the response on the left of an ~ operator, 
 #' and the terms, separated by + operators, on the right. Nonparametric smoothing
 #' terms are indicated by pb() for penalised beta splines, cs for smoothing splines, 
@@ -78,7 +77,7 @@
 #' @export
 #'
 
-gamlssDS4 <- function(parameter = parameter, smoother = smoother, formula = formula, 
+gamlssDS4 <- function(parameter = parameter, formula = formula, 
                       sigma.formula = sigma.formula, nu.formula = nu.formula, 
                       tau.formula = tau.formula, family = family, data = data, 
                       mu.beta.vect = mu.beta.vect, sigma.beta.vect = sigma.beta.vect,
@@ -215,8 +214,6 @@ gamlssDS4 <- function(parameter = parameter, smoother = smoother, formula = form
       base::assign(paste("Z", i, ".mat", sep=""), basismatrix, env=environment())
     }
   }
-  # save the design matrix for the current smoother for convenience
-  Z.mat <- eval(parse(text=paste("Z", i, ".mat", sep="")), env=environment())
   
   ## calculate smoothing fitted value matrix s
   # get the gamma vectors for the respective parameter & multiply them with the matrices
@@ -311,34 +308,17 @@ gamlssDS4 <- function(parameter = parameter, smoother = smoother, formula = form
   wt <- ifelse(wt>1e+10,1e+10,wt)
   wt <- ifelse(wt<1e-10,1e-10,wt)
   
-  ## Update working variable vector wv
-  wv <- eta+dldp/(dr*wt)
-  if (family$type=="Mixed"){
-    wv <-ifelse(is.nan(wv),0,wv)
-  }
+  ## stoppping criterion for backfitting
+  # the sums are necessary to calculate deltaf on the server which is needed to determine
+  # the stoppping criterion for backfitting
+  old <- base::get("old", env=parent.frame())
+  sumofsquares <- sum((s[,length(coefSmo)] - old)^2*wt)
+  sumofweights <- sum(wt)
+  # sum over all smoothing fitted values for one observation (& return sum over all observations)
+  sumofsmoothers <- sum(wt*apply(s,1,sum)^2)
   
-  #*C) Calculate matrix & vectors ----
-  
-  ## Calculate partial residuals
-  partial.residuals <- wv - X.mat %*% beta.vect - base::rowSums(as.matrix(s[,-smoother]))
-  
-  ## Calculate matrix and vector to return to the client
-  vector <- t(Z.mat) %*% (wt*partial.residuals)
-  matrix <- t(Z.mat) %*% diag(wt) %*% Z.mat
-  # remove the dimnames attributes
-  attr(vector, "dimnames") <- NULL
-  attr(matrix, "dimnames") <- NULL
-  
-  ## Calculate deviance
-  di <- dev.function(fv)  # deviance increment
-  dv <- sum(di)  # the global deviance on the server
-  
-  
-  #**************************************************************************
-  # III) Output ----
-  #**************************************************************************
-  
-  return(list(matrix=matrix, vector=vector, dv=dv))
+  return(list(sumofsquares=sumofsquares, sumofweights=sumofweights,
+              sumofsmoothers=sumofsmoothers))
   
 } 
 # AGGREGATE FUNCTION

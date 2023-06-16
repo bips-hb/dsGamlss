@@ -6,7 +6,6 @@
 \usage{
 gamlssDS4(
   parameter = parameter,
-  smoother = smoother,
   formula = formula,
   sigma.formula = sigma.formula,
   nu.formula = nu.formula,
@@ -30,8 +29,6 @@ gamlssDS4(
 \arguments{
 \item{parameter}{a string specifing for which of the model parameters "mu", "sigma", "nu"
 or "tau" the model fitting should be performed}
-
-\item{smoother}{an integer indicating the number of the smoother that should be fitted}
 
 \item{formula}{a formula object, with the response on the left of an ~ operator, 
 and the terms, separated by + operators, on the right. Nonparametric smoothing

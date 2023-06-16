@@ -217,7 +217,7 @@ gamlssDS3 <- function(parameter = parameter, smoother = smoother, formula = form
     }
   }
   # save the design matrix for the current smoother for convenience
-  Z.mat <- eval(parse(text=paste("Z", i, ".mat", sep="")), env=environment())
+  Z.mat <- eval(parse(text=paste("Z", smoother, ".mat", sep="")), env=environment())
   
   ## calculate smoothing fitted value matrix s
   # get the gamma vectors for the respective parameter & multiply them with the matrices
@@ -312,6 +312,21 @@ gamlssDS3 <- function(parameter = parameter, smoother = smoother, formula = form
   wt <- ifelse(wt>1e+10,1e+10,wt)
   wt <- ifelse(wt<1e-10,1e-10,wt)
   
+  ## save smoothing fitted value
+  # (stopping criterion for backfitting)
+  # the sums are necessary to calculate deltaf on the server which is needed to determine
+  # the stoppping criterion for backfitting
+  if (smoother==1){
+    sumofsquares <- 0
+    sumofweights <- 1
+  } else {
+    old <- base::get("old", env=parent.frame())
+    sumofsquares <- sum((s[,(smoother-1)] - old)^2*wt)
+    sumofweights <- sum(wt)
+  }
+  # save the smoothed fitted values for the current smoother
+  base::assign("old", as.vector(s[,smoother]), env=parent.frame())
+  
   ## Update working variable vector wv
   wv <- eta+dldp/(dr*wt)
   if (family$type=="Mixed"){
@@ -339,7 +354,8 @@ gamlssDS3 <- function(parameter = parameter, smoother = smoother, formula = form
   # III) Output ----
   #**************************************************************************
   
-  return(list(matrix=matrix, vector=vector, dv=dv))
+  return(list(matrix=matrix, vector=vector, dv=dv, sumofsquares=sumofsquares,
+              sumofweights=sumofweights))
   
 } 
 # AGGREGATE FUNCTION
