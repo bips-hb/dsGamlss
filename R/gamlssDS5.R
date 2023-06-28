@@ -146,6 +146,10 @@ gamlssDS5 <- function(parameter = parameter, formula = formula,
   dev.function <- family$G.dev.incr
   
   c1 <- as.numeric(unlist(strsplit(control, split=",")))
+  mu.step <- c1[2]
+  sigma.step <- c1[3]
+  nu.step <- c1[4]
+  tau.step <- c1[5]
   c2 <- as.numeric(unlist(strsplit(i.control, split=",")))
   
   # Convert parameter vectors from transmittable (character) format to numeric 
@@ -236,14 +240,6 @@ gamlssDS5 <- function(parameter = parameter, formula = formula,
   s <- as.matrix(s)
   
   #*B) Update distribution parameter vector----
-  # Calculate predictor vector eta for the parameter
-  eta <- as.vector(X.mat %*% beta.vect + base::rowSums(as.matrix(s)))
-  
-  # Calculate the distribution parameter vector
-  fv <- eval(parse(text=paste("family$", parameter, ".linkinv(eta)", sep="")), env=environment())
-  base::assign(parameter, fv, env=parent.frame())
-  
-  ## Calculate deviance
   if("mu" %in% names(family$parameters)){
     mu <- base::get("mu", env=parent.frame())
   }
@@ -257,6 +253,17 @@ gamlssDS5 <- function(parameter = parameter, formula = formula,
     tau <- base::get("tau", env=parent.frame())
   }
   
+  # Calculate predictor vector eta for the parameter
+  eta.old <- eval(parse(text=paste("family$", parameter, ".linkfun(", parameter, ")", sep="")), env=environment())
+  eta <- as.vector(X.mat %*% beta.vect + base::rowSums(as.matrix(s)))
+  step <- eval(parse(text=paste(parameter, ".step", sep="")), env=environment())
+  eta <- step*eta+(1-step)*eta.old
+  
+  # Calculate the distribution parameter vector
+  fv <- eval(parse(text=paste("family$", parameter, ".linkinv(eta)", sep="")), env=environment())
+  base::assign(parameter, fv, env=parent.frame())
+  
+  ## Calculate deviance
   if (parameter=="mu"){
     formals(dev.function, env=new.env()) <- alist(mu = fv)
   }
