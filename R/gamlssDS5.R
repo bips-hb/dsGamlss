@@ -1,13 +1,12 @@
 #'
-#' @title gamlssDS3 called by ds.gamlss
-#' @description This is the third serverside aggregate function called by ds.gamlss.
-#' @details It is an aggregation function that uses the model structure and starting
-#' parameter vectors constructed by gamlssDS1 to iteratively obtain the PWLSE for gamma.
-#' For more details please see the extensive header of ds.gamlss and also the
+#' @title gamlssDS5 called by ds.gamlss
+#' @description This is the fifth serverside aggregate function called by ds.gamlss.
+#' @details It is an aggregation function that updates the distribution parameters and returns
+#' the current deviance. The deviance can then be used on the client side to check whether the
+#' innter iteration converged. For more details please see the extensive header of ds.gamlss and also the
 #' gamlss function in native R gamlss package.
 #' @param parameter a string specifing for which of the model parameters "mu", "sigma", "nu"
 #' or "tau" the model fitting should be performed
-#' @param smoother an integer indicating the number of the smoother that should be fitted
 #' @param formula a formula object, with the response on the left of an ~ operator, 
 #' and the terms, separated by + operators, on the right. Nonparametric smoothing
 #' terms are indicated by pb() for penalised beta splines, cs for smoothing splines, 
@@ -79,7 +78,7 @@
 #' @export
 #'
 
-gamlssDS3 <- function(parameter = parameter, smoother = smoother, formula = formula, 
+gamlssDS5 <- function(parameter = parameter, formula = formula, 
                       sigma.formula = sigma.formula, nu.formula = nu.formula, 
                       tau.formula = tau.formula, family = family, data = data, 
                       mu.beta.vect = mu.beta.vect, sigma.beta.vect = sigma.beta.vect,
@@ -144,6 +143,8 @@ gamlssDS3 <- function(parameter = parameter, smoother = smoother, formula = form
   family <- gsub("comma_symbol", ",", family, fixed = TRUE)
   family <- gamlss.dist::as.family(eval(parse(text=family), env=environment()))
   
+  dev.function <- family$G.dev.incr
+  
   c1 <- as.numeric(unlist(strsplit(control, split=",")))
   c2 <- as.numeric(unlist(strsplit(i.control, split=",")))
   
@@ -165,7 +166,7 @@ gamlssDS3 <- function(parameter = parameter, smoother = smoother, formula = form
   pb.xr <- as.numeric(unlist(strsplit(pb.xr, split=",")))
   
   #**************************************************************************
-  # II) Calculate matrix & vector to return to client ----  
+  # II) Update distribution parameter vector ----  
   #**************************************************************************
   
   #*A) Fit the model ----
@@ -214,8 +215,6 @@ gamlssDS3 <- function(parameter = parameter, smoother = smoother, formula = form
       base::assign(paste("Z", i, ".mat", sep=""), basismatrix, env=environment())
     }
   }
-  # save the design matrix for the current smoother for convenience
-  Z.mat <- eval(parse(text=paste("Z", smoother, ".mat", sep="")), env=environment())
   
   ## calculate smoothing fitted value matrix s
   # get the gamma vectors for the respective parameter & multiply them with the matrices
@@ -236,8 +235,15 @@ gamlssDS3 <- function(parameter = parameter, smoother = smoother, formula = form
   }
   s <- as.matrix(s)
   
-  #*B) Update vectors----
-  ## Calculate predictor vector eta for the parameter
+  #*B) Update distribution parameter vector----
+  # Calculate predictor vector eta for the parameter
+  eta <- as.vector(X.mat %*% beta.vect + base::rowSums(as.matrix(s)))
+  
+  # Calculate the distribution parameter vector
+  fv <- eval(parse(text=paste("family$", parameter, ".linkinv(eta)", sep="")), env=environment())
+  base::assign(parameter, fv, env=parent.frame())
+  
+  ## Calculate deviance
   if("mu" %in% names(family$parameters)){
     mu <- base::get("mu", env=parent.frame())
   }
@@ -250,100 +256,37 @@ gamlssDS3 <- function(parameter = parameter, smoother = smoother, formula = form
   if("tau" %in% names(family$parameters)){
     tau <- base::get("tau", env=parent.frame())
   }
-  eta <- eval(parse(text=paste("family$", parameter, ".linkfun(", parameter, ")", sep="")), env=environment())
   
-  ## Calculate score and weights (for Fisher-scoring algorithm)
-  dr <- eval(parse(text=paste("family$", parameter, ".dr(eta)", sep="")), env=environment())  # dparameter/ deta
-  dr <- 1/dr  # deta/ dparameter = 1/ (dparameter/ deta)
-  
-  # get the first and second derivatives of the log-likelihood
   if (parameter=="mu"){
-    fv <- mu
-    # first derivative of log-likelihood
-    dldp.function <- family$dldm
-    formals(dldp.function, env=new.env()) <- alist(mu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
-    # second derivative of log-likelihood
-    d2ldp2.function <- family$d2ldm2
-    formals(d2ldp2.function, env=new.env()) <- alist(mu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    formals(dev.function, env=new.env()) <- alist(mu = fv)
   }
   if (parameter=="sigma"){
-    fv <- sigma
-    # first derivative of log-likelihood
-    dldp.function <- family$dldd
-    formals(dldp.function, env=new.env()) <- alist(sigma = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
-    # second derivative of log-likelihood
-    d2ldp2.function <- family$d2ldd2
-    formals(d2ldp2.function, env=new.env()) <- alist(sigma = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    formals(dev.function, env=new.env()) <- alist(sigma = fv)
   }
   if (parameter=="nu"){
-    fv <- nu
-    # first derivative of log-likelihood
-    dldp.function <- family$dldv
-    formals(dldp.function, env=new.env()) <- alist(nu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
-    # second derivative of log-likelihood
-    d2ldp2.function <- family$d2ldv2
-    formals(d2ldp2.function, env=new.env()) <- alist(nu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    formals(dev.function, env=new.env()) <- alist(nu = fv)
   }
   if (parameter=="tau"){
-    fv <- tau
-    # first derivative of log-likelihood
-    dldp.function <- family$dldt
-    formals(dldp.function, env=new.env()) <- alist(tau = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
-    # second derivative of log-likelihood
-    d2ldp2.function <- family$d2ldt2
-    formals(d2ldp2.function, env=new.env()) <- alist(tau = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    formals(dev.function, env=new.env()) <- alist(tau = fv)
   }
+  di <- dev.function(fv)  # deviance increment
+  dv <- sum(di)  # the global deviance on the server
   
-  dldp <- dldp.function(fv)  # first derivative of log-likelihood with respect to parameter
-  d2ldp2 <- d2ldp2.function(fv)  # expected  second derivative of log-Likelihood with respect to parameter
-  d2ldp2 <- ifelse(d2ldp2 < -1e-15, d2ldp2, -1e-15)
-  wt <- -(d2ldp2/(dr*dr)) # weights for Fisher-scoring algorithm =-(d2l/d2p)(dparameter/deta)^2
-  # we need to stop the weights to go to Infty
-  wt <- ifelse(wt>1e+10,1e+10,wt)
-  wt <- ifelse(wt<1e-10,1e-10,wt)
-  
-  ## save smoothing fitted value
-  # (stopping criterion for backfitting)
-  # the sums are necessary to calculate deltaf on the server which is needed to determine
-  # the stoppping criterion for backfitting
-  if (smoother==1){
-    sumofsquares <- 0
-    sumofweights <- 1
-  } else {
-    old <- base::get("old", env=parent.frame())
-    sumofsquares <- sum((s[,(smoother-1)] - old)^2*wt)
-    sumofweights <- sum(wt)
-  }
-  # save the smoothed fitted values for the current smoother
-  base::assign("old", as.vector(s[,smoother]), env=parent.frame())
-  
-  ## Update working variable vector wv
-  wv <- eta+dldp/(dr*wt)
-  if (family$type=="Mixed"){
-    wv <-ifelse(is.nan(wv),0,wv)
-  }
-  
-  #*C) Calculate matrix & vectors ----
-  
-  ## Calculate partial residuals
-  partial.residuals <- wv - X.mat %*% beta.vect - base::rowSums(as.matrix(s[,-smoother]))
-  
-  ## Calculate matrix and vector to return to the client
-  vector <- t(Z.mat) %*% (wt*partial.residuals)
-  matrix <- t(Z.mat) %*% diag(wt) %*% Z.mat
-  # remove the dimnames attributes
-  attr(vector, "dimnames") <- NULL
-  attr(matrix, "dimnames") <- NULL
+  ## Check whether distribution parameter valid
+  errorMessage <- NULL
+  valid <- eval(parse(text=paste("family$", parameter, ".valid(fv)", sep="")), env=environment())
+  if (is.na(!valid)){
+    errorMessage <- "Fitted values in the inner iteration out of range."
+  } 
   
   
   #**************************************************************************
   # III) Output ----
   #**************************************************************************
   
-  return(list(matrix=matrix, vector=vector, sumofsquares=sumofsquares,
-              sumofweights=sumofweights))
+  return(list(dv=dv, errorMessage3=errorMessage))
   
 } 
 # AGGREGATE FUNCTION
-# gamlssDS3
+# gamlssDS5
 

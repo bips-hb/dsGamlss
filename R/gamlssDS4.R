@@ -142,8 +142,6 @@ gamlssDS4 <- function(parameter = parameter, formula = formula,
   family <- gsub("comma_symbol", ",", family, fixed = TRUE)
   family <- gamlss.dist::as.family(eval(parse(text=family), env=environment()))
   
-  dev.function <- family$G.dev.incr
-  
   c1 <- as.numeric(unlist(strsplit(control, split=",")))
   c2 <- as.numeric(unlist(strsplit(i.control, split=",")))
   
@@ -165,7 +163,10 @@ gamlssDS4 <- function(parameter = parameter, formula = formula,
   pb.xr <- as.numeric(unlist(strsplit(pb.xr, split=",")))
   
   #**************************************************************************
-  # II) Calculate matrix & vector to return to client ----  
+  # II) Calculate sums to return to client ----  
+  # the sums can be used to determine the stopping criterion for the 
+  # backfitting on the client side, i.e. the change in the smoothing fitted
+  # values (deltaf)
   #**************************************************************************
   
   #*A) Fit the model ----
@@ -234,7 +235,7 @@ gamlssDS4 <- function(parameter = parameter, formula = formula,
   }
   s <- as.matrix(s)
   
-  #*B) Update vectors----
+  #*B) Calculate deviance ----
   ## Calculate predictor vector eta for the parameter
   if("mu" %in% names(family$parameters)){
     mu <- base::get("mu", env=parent.frame())
@@ -263,8 +264,6 @@ gamlssDS4 <- function(parameter = parameter, formula = formula,
     # second derivative of log-likelihood
     d2ldp2.function <- family$d2ldm2
     formals(d2ldp2.function, env=new.env()) <- alist(mu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
-    # deviance
-    formals(dev.function, env=new.env()) <- alist(mu = fv)
   }
   if (parameter=="sigma"){
     fv <- sigma
@@ -274,8 +273,6 @@ gamlssDS4 <- function(parameter = parameter, formula = formula,
     # second derivative of log-likelihood
     d2ldp2.function <- family$d2ldd2
     formals(d2ldp2.function, env=new.env()) <- alist(sigma = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
-    # deviance
-    formals(dev.function, env=new.env()) <- alist(sigma = fv)
   }
   if (parameter=="nu"){
     fv <- nu
@@ -285,8 +282,6 @@ gamlssDS4 <- function(parameter = parameter, formula = formula,
     # second derivative of log-likelihood
     d2ldp2.function <- family$d2ldv2
     formals(d2ldp2.function, env=new.env()) <- alist(nu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
-    # deviance
-    formals(dev.function, env=new.env()) <- alist(nu = fv)
   }
   if (parameter=="tau"){
     fv <- tau
@@ -296,8 +291,6 @@ gamlssDS4 <- function(parameter = parameter, formula = formula,
     # second derivative of log-likelihood
     d2ldp2.function <- family$d2ldt2
     formals(d2ldp2.function, env=new.env()) <- alist(tau = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
-    # deviance
-    formals(dev.function, env=new.env()) <- alist(tau = fv)
   }
   
   dldp <- dldp.function(fv)  # first derivative of log-likelihood with respect to parameter
@@ -308,6 +301,7 @@ gamlssDS4 <- function(parameter = parameter, formula = formula,
   wt <- ifelse(wt>1e+10,1e+10,wt)
   wt <- ifelse(wt<1e-10,1e-10,wt)
   
+  #*C) Calculate sums ----
   ## stoppping criterion for backfitting
   # the sums are necessary to calculate deltaf on the server which is needed to determine
   # the stoppping criterion for backfitting
@@ -316,6 +310,10 @@ gamlssDS4 <- function(parameter = parameter, formula = formula,
   sumofweights <- sum(wt)
   # sum over all smoothing fitted values for one observation (& return sum over all observations)
   sumofsmoothers <- sum(wt*apply(s,1,sum)^2)
+  
+  #**************************************************************************
+  # III) Output ----
+  #**************************************************************************
   
   return(list(sumofsquares=sumofsquares, sumofweights=sumofweights,
               sumofsmoothers=sumofsmoothers))

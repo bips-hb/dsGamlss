@@ -375,17 +375,20 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   wt <- ifelse(wt>1e+10,1e+10,wt)
   wt <- ifelse(wt<1e-10,1e-10,wt)
 
+  ## Calculate deviance (this is the initial deviance)
+  di <- dev.function(fv)  # deviance increment
+  dv <- sum(di)  # the global deviance on the server
+
   ## Update working variable vector wv
   wv <- eta+dldp/(dr*wt)
   if (family$type=="Mixed"){
     wv <-ifelse(is.nan(wv),0,wv)
   }
-  
-  #*C) Calculate matrix & vectors ----
 
+  #*C) Calculate matrix & vectors ----
   ## Calculate partial residuals
   partial.residuals <- wv - base::rowSums(s)
-  
+
   ## Calculate matrix and vector to return to the client
   vector <- t(X.mat) %*% (wt*partial.residuals)
   matrix <- t(X.mat) %*% diag(wt) %*% X.mat
@@ -393,10 +396,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   attr(vector, "dimnames") <- NULL
   attr(matrix, "dimnames") <- NULL
 
-  ## Calculate deviance
-  di <- dev.function(fv)  # deviance increment
-  dv <- sum(di)  # the global deviance on the server
-  
+
   #**************************************************************************
   # IV) Backup disclosure risk----
   # If y, X or w data are invalid but user has modified clientside
@@ -406,13 +406,13 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   # trigger a controlled trap in the clientside function to destroy the
   # score.vector and information.matrix in the study with the problem.
   # So this will make model fail without explanation
-  
+
   # Disclosure code from gamlssDS1
   #**************************************************************************
-  
+
   errorMessage.combined <- NULL
   disclosure.risk <- 0
-  
+
   mu.x <- mod.gamlss.ds$mu.x
   sigma.x <- mod.gamlss.ds$sigma.x
   nu.x <- mod.gamlss.ds$nu.x
@@ -421,7 +421,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   dim.sigma.x <- dim(sigma.x)
   dim.nu.x <- dim(nu.x)
   dim.tau.x <- dim(tau.x)
-  
+
   #*A) Oversaturated model----
   # (test against nfilter.glm)
   gamlss.saturation.invalid <- 0
@@ -430,13 +430,13 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   num.sigma.p <- dim.sigma.x[2]
   num.nu.p <- dim.nu.x[2]
   num.tau.p <- dim.tau.x[2]
-  
+
   if(mod.gamlss.ds$df.fit > nfilter.glm*num.n){
     gamlss.saturation.invalid <- 1
     errorMessage.combined <- c(errorMessage.combined,
                                "ERROR: Model has too many parameters, there is a possible risk of disclosure - please simplify model")
   }
-  
+
   if(!is.null(num.mu.p)){
     if(num.mu.p > nfilter.glm*num.n){
       gamlss.saturation.invalid <- 1
@@ -444,7 +444,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
                                  "ERROR: Model for mu has too many parameters, there is a possible risk of disclosure - please simplify model")
     }
   }
-  
+
   if(!is.null(num.sigma.p)){
     if(num.sigma.p > nfilter.glm*num.n){
       gamlss.saturation.invalid <- 1
@@ -452,7 +452,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
                                  "ERROR: Model for sigma has too many parameters, there is a possible risk of disclosure - please simplify model")
     }
   }
-  
+
   if(!is.null(num.nu.p)){
     if(num.nu.p > nfilter.glm*num.n){
       gamlss.saturation.invalid <- 1
@@ -460,7 +460,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
                                  "ERROR: Model for nu has too many parameters, there is a possible risk of disclosure - please simplify model")
     }
   }
-  
+
   if(!is.null(num.tau.p)){
     if(num.tau.p > nfilter.glm*num.n){
       gamlss.saturation.invalid <- 1
@@ -468,7 +468,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
                                  "ERROR: Model for tau has too many parameters, there is a possible risk of disclosure - please simplify model")
     }
   }
-  
+
   #*B) Invalid y, mu.x, sigma.x, nu.x or tau.x ----
   # If y, X or w data are invalid but user has modified clientside
   # function (ds.gamlss) to circumvent trap, model will get to this point without
@@ -476,13 +476,13 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   # So as a safety measure, we will now use the same test that is used to
   # trigger a controlled trap in the clientside function to destroy the
   # score.vector and information.matrix in the study with the problem.
-  
+
   ## check y vector validity
   y.invalid <- 0
-  
+
   # count number of unique non-missing values (disclosure risk only arises with two levels)
   unique.values.noNA.y <- unique(y[stats::complete.cases(y)])
-  
+
   # if two levels, check whether either level 0 < n < nfilter.tab
   if(length(unique.values.noNA.y)==2){
     tabvar <- table(y)[table(y)>=1]  # tabvar counts n in all categories with at least one observation
@@ -493,11 +493,11 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
                                  "ERROR: y vector is binary with one category less than filter threshold for table cell size")
     }
   }
-  
+
   ## check validity of design matrices
   # Check no dichotomous X vectors with between 1 and filter.threshold
   # observations at either level
-  
+
   # mu
   mu.par.invalid <- NULL
   if(!is.null(num.mu.p)){
@@ -509,13 +509,13 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
         min.category <- min(tabvar)
         if(min.category < nfilter.tab){
           mu.par.invalid[pj] <- 1
-          errorMessage.combined <- c(errorMessage.combined, 
+          errorMessage.combined <- c(errorMessage.combined,
                                      "ERROR: at least one column in mu.x matrix is binary with one category less than filter threshold for table cell size")
         }
       }
     }
   }
-  
+
   # sigma
   sigma.par.invalid <- NULL
   if(!is.null(num.sigma.p)){
@@ -533,7 +533,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
       }
     }
   }
-  
+
   # nu
   nu.par.invalid <- NULL
   if(!is.null(num.nu.p)){
@@ -551,7 +551,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
       }
     }
   }
-  
+
   # tau
   tau.par.invalid <- NULL
   if(!is.null(num.tau.p)){
@@ -563,13 +563,13 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
         min.category <- min(tabvar)
         if(min.category < nfilter.tab){
           tau.par.invalid[pj] <- 1
-          errorMessage.combined <- c(errorMessage.combined, 
+          errorMessage.combined <- c(errorMessage.combined,
                                      "ERROR: at least one column in tau.x matrix is binary with one category less than filter threshold for table cell size")
         }
       }
     }
   }
-  
+
   #*C) Combine disclosure risks----
   # If there is a disclosure risk destroy the matrix and vector (that should be returned to the client)
   if(!(y.invalid>0 || sum(mu.par.invalid)>0|| sum(sigma.par.invalid)>0 || sum(nu.par.invalid)>0 ||
