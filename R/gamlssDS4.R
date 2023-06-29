@@ -216,11 +216,27 @@ gamlssDS4 <- function(parameter = parameter, formula = formula,
     }
   }
   
+  ## Get fitted values for all distribution parameters
+  # necessary for all parameters to calculate deviance
+  if("mu" %in% names(family$parameters)){
+    mu <- base::get("mu", env=parent.frame())
+  }
+  if("sigma" %in% names(family$parameters)){
+    sigma <- base::get("sigma", env=parent.frame())
+  }
+  if("nu" %in% names(family$parameters)){
+    nu <- base::get("nu", env=parent.frame())
+  }
+  if("tau" %in% names(family$parameters)){
+    tau <- base::get("tau", env=parent.frame())
+  }
+  
   ## calculate smoothing fitted value matrix s
   # get the gamma vectors for the respective parameter & multiply them with the matrices
   gamma.start <- 1
   coefSmo <- eval(parse(text=paste("mod.gamlss.ds$", parameter, ".coefSmo", sep="")), env=environment())
   if (!is.null(coefSmo)){
+    s.old <- base::get(paste(parameter, ".s", sep=""), env=parent.frame())
     s <- NULL
     for (i in 1:length(coefSmo)){
       gamma.length <- dim(coefSmo[[i]]$coef)[1]
@@ -237,18 +253,6 @@ gamlssDS4 <- function(parameter = parameter, formula = formula,
   
   #*B) Calculate deviance ----
   ## Calculate predictor vector eta for the parameter
-  if("mu" %in% names(family$parameters)){
-    mu <- base::get("mu", env=parent.frame())
-  }
-  if("sigma" %in% names(family$parameters)){
-    sigma <- base::get("sigma", env=parent.frame())
-  }
-  if("nu" %in% names(family$parameters)){
-    nu <- base::get("nu", env=parent.frame())
-  }
-  if("tau" %in% names(family$parameters)){
-    tau <- base::get("tau", env=parent.frame())
-  }
   eta <- eval(parse(text=paste("family$", parameter, ".linkfun(", parameter, ")", sep="")), env=environment())
   
   ## Calculate score and weights (for Fisher-scoring algorithm)
@@ -305,8 +309,7 @@ gamlssDS4 <- function(parameter = parameter, formula = formula,
   ## stoppping criterion for backfitting
   # the sums are necessary to calculate deltaf on the server which is needed to determine
   # the stoppping criterion for backfitting
-  old <- base::get("old", env=parent.frame())
-  sumofsquares <- sum((s[,length(coefSmo)] - old)^2*wt)
+  sumofsquares <- sum((s[,length(coefSmo)] - s.old[,length(coefSmo)])^2*wt)
   sumofweights <- sum(wt)
   # sum over all smoothing fitted values for one observation (& return sum over all observations)
   sumofsmoothers <- sum(wt*apply(s,1,sum)^2)

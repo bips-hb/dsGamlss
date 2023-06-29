@@ -219,7 +219,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   
   #**************************************************************************
   # III) Initialization ----
-  # Initialize the parameter vectors & the deviance
+  # Initialize the parameter vectors, smoothing fitted values & the deviance
   #**************************************************************************
 
   ## Initialize & save the parameter vectors on the server-side
@@ -239,6 +239,24 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   if("tau" %in% names(family$parameters)){
     eval(family$tau.initial, env=environment())
     base::assign("tau", tau, env=parent.frame())
+  }
+  
+  ## Initialize & save the matrix with the smoothing fitted values on the server-side
+  # since they might be disclosive they cannot be returned to the client
+  if (!is.null(mod.gamlss.ds$mu.coefSmo)){
+    base::assign("mu.s", matrix(0, mod.gamlss.ds$N, length(mod.gamlss.ds$mu.coefSmo)), env=parent.frame())
+  }
+  
+  if (!is.null(mod.gamlss.ds$sigma.coefSmo)){
+    base::assign("sigma.s", matrix(0, mod.gamlss.ds$N, length(mod.gamlss.ds$sigma.coefSmo)), env=parent.frame())
+  }
+  
+  if (!is.null(mod.gamlss.ds$nu.coefSmo)){
+    base::assign("nu.s", matrix(0, mod.gamlss.ds$N, length(mod.gamlss.ds$nu.coefSmo)), env=parent.frame())
+  }
+  
+  if (!is.null(mod.gamlss.ds$tau.coefSmo)){
+    base::assign("tau.s", matrix(0, mod.gamlss.ds$N, length(mod.gamlss.ds$tau.coefSmo)), env=parent.frame())
   }
 
   ## Initialize deviance

@@ -189,7 +189,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   
   # Remember model.variables and then varnames include both yvect and linear predictor components 
   model.variables <- unlist(strsplit(formulas, split="|", fixed=TRUE))
-
+  
   varnames <- c()
   for(i in 1:length(model.variables)){
     elt <- unlist(strsplit(model.variables[i], split="$", fixed=TRUE))
@@ -282,6 +282,21 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
     }
   }
   
+  ## Get fitted values for all distribution parameters
+  # necessary for all parameters to calculate deviance
+  if("mu" %in% names(family$parameters)){
+    mu <- base::get("mu", env=parent.frame())
+  }
+  if("sigma" %in% names(family$parameters)){
+    sigma <- base::get("sigma", env=parent.frame())
+  }
+  if("nu" %in% names(family$parameters)){
+    nu <- base::get("nu", env=parent.frame())
+  }
+  if("tau" %in% names(family$parameters)){
+    tau <- base::get("tau", env=parent.frame())
+  }
+  
   ## calculate smoothing fitted value matrix s
   # get the gamma vectors for the respective parameter & multiply them with the matrices
   gamma.start <- 1
@@ -303,24 +318,12 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   
   #*B) Update vectors----
   ## Calculate predictor vector eta for the parameter
-  if("mu" %in% names(family$parameters)){
-    mu <- base::get("mu", env=parent.frame())
-  }
-  if("sigma" %in% names(family$parameters)){
-    sigma <- base::get("sigma", env=parent.frame())
-  }
-  if("nu" %in% names(family$parameters)){
-    nu <- base::get("nu", env=parent.frame())
-  }
-  if("tau" %in% names(family$parameters)){
-    tau <- base::get("tau", env=parent.frame())
-  }
   eta <- eval(parse(text=paste("family$", parameter, ".linkfun(", parameter, ")", sep="")), env=environment())
   
   ## Calculate score and weights (for Fisher-scoring algorithm)
   dr <- eval(parse(text=paste("family$", parameter, ".dr(eta)", sep="")), env=environment())  # dparameter/ deta
   dr <- 1/dr  # deta/ dparameter = 1/ (dparameter/ deta)
-
+  
   # get the first and second derivatives of the log-likelihood
   if (parameter=="mu"){
     fv <- mu
@@ -366,7 +369,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
     # deviance
     formals(dev.function, env=new.env()) <- alist(tau = fv)
   }
-
+  
   dldp <- dldp.function(fv)  # first derivative of log-likelihood with respect to parameter
   d2ldp2 <- d2ldp2.function(fv)  # expected  second derivative of log-Likelihood with respect to parameter
   d2ldp2 <- ifelse(d2ldp2 < -1e-15, d2ldp2, -1e-15)
@@ -374,29 +377,29 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   # we need to stop the weights to go to Infty
   wt <- ifelse(wt>1e+10,1e+10,wt)
   wt <- ifelse(wt<1e-10,1e-10,wt)
-
+  
   ## Calculate deviance (this is the initial deviance)
   di <- dev.function(fv)  # deviance increment
   dv <- sum(di)  # the global deviance on the server
-
+  
   ## Update working variable vector wv
   wv <- eta+dldp/(dr*wt)
   if (family$type=="Mixed"){
     wv <-ifelse(is.nan(wv),0,wv)
   }
-
+  
   #*C) Calculate matrix & vectors ----
   ## Calculate partial residuals
   partial.residuals <- wv - base::rowSums(s)
-
+  
   ## Calculate matrix and vector to return to the client
   vector <- t(X.mat) %*% (wt*partial.residuals)
   matrix <- t(X.mat) %*% diag(wt) %*% X.mat
   # remove the dimnames attributes
   attr(vector, "dimnames") <- NULL
   attr(matrix, "dimnames") <- NULL
-
-
+  
+  
   #**************************************************************************
   # IV) Backup disclosure risk----
   # If y, X or w data are invalid but user has modified clientside
@@ -406,13 +409,13 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   # trigger a controlled trap in the clientside function to destroy the
   # score.vector and information.matrix in the study with the problem.
   # So this will make model fail without explanation
-
+  
   # Disclosure code from gamlssDS1
   #**************************************************************************
-
+  
   errorMessage.combined <- NULL
   disclosure.risk <- 0
-
+  
   mu.x <- mod.gamlss.ds$mu.x
   sigma.x <- mod.gamlss.ds$sigma.x
   nu.x <- mod.gamlss.ds$nu.x
@@ -421,7 +424,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   dim.sigma.x <- dim(sigma.x)
   dim.nu.x <- dim(nu.x)
   dim.tau.x <- dim(tau.x)
-
+  
   #*A) Oversaturated model----
   # (test against nfilter.glm)
   gamlss.saturation.invalid <- 0
@@ -430,13 +433,13 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   num.sigma.p <- dim.sigma.x[2]
   num.nu.p <- dim.nu.x[2]
   num.tau.p <- dim.tau.x[2]
-
+  
   if(mod.gamlss.ds$df.fit > nfilter.glm*num.n){
     gamlss.saturation.invalid <- 1
     errorMessage.combined <- c(errorMessage.combined,
                                "ERROR: Model has too many parameters, there is a possible risk of disclosure - please simplify model")
   }
-
+  
   if(!is.null(num.mu.p)){
     if(num.mu.p > nfilter.glm*num.n){
       gamlss.saturation.invalid <- 1
@@ -444,7 +447,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
                                  "ERROR: Model for mu has too many parameters, there is a possible risk of disclosure - please simplify model")
     }
   }
-
+  
   if(!is.null(num.sigma.p)){
     if(num.sigma.p > nfilter.glm*num.n){
       gamlss.saturation.invalid <- 1
@@ -452,7 +455,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
                                  "ERROR: Model for sigma has too many parameters, there is a possible risk of disclosure - please simplify model")
     }
   }
-
+  
   if(!is.null(num.nu.p)){
     if(num.nu.p > nfilter.glm*num.n){
       gamlss.saturation.invalid <- 1
@@ -460,7 +463,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
                                  "ERROR: Model for nu has too many parameters, there is a possible risk of disclosure - please simplify model")
     }
   }
-
+  
   if(!is.null(num.tau.p)){
     if(num.tau.p > nfilter.glm*num.n){
       gamlss.saturation.invalid <- 1
@@ -468,7 +471,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
                                  "ERROR: Model for tau has too many parameters, there is a possible risk of disclosure - please simplify model")
     }
   }
-
+  
   #*B) Invalid y, mu.x, sigma.x, nu.x or tau.x ----
   # If y, X or w data are invalid but user has modified clientside
   # function (ds.gamlss) to circumvent trap, model will get to this point without
@@ -476,13 +479,13 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   # So as a safety measure, we will now use the same test that is used to
   # trigger a controlled trap in the clientside function to destroy the
   # score.vector and information.matrix in the study with the problem.
-
+  
   ## check y vector validity
   y.invalid <- 0
-
+  
   # count number of unique non-missing values (disclosure risk only arises with two levels)
   unique.values.noNA.y <- unique(y[stats::complete.cases(y)])
-
+  
   # if two levels, check whether either level 0 < n < nfilter.tab
   if(length(unique.values.noNA.y)==2){
     tabvar <- table(y)[table(y)>=1]  # tabvar counts n in all categories with at least one observation
@@ -493,11 +496,11 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
                                  "ERROR: y vector is binary with one category less than filter threshold for table cell size")
     }
   }
-
+  
   ## check validity of design matrices
   # Check no dichotomous X vectors with between 1 and filter.threshold
   # observations at either level
-
+  
   # mu
   mu.par.invalid <- NULL
   if(!is.null(num.mu.p)){
@@ -515,7 +518,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
       }
     }
   }
-
+  
   # sigma
   sigma.par.invalid <- NULL
   if(!is.null(num.sigma.p)){
@@ -533,7 +536,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
       }
     }
   }
-
+  
   # nu
   nu.par.invalid <- NULL
   if(!is.null(num.nu.p)){
@@ -551,7 +554,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
       }
     }
   }
-
+  
   # tau
   tau.par.invalid <- NULL
   if(!is.null(num.tau.p)){
@@ -569,7 +572,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
       }
     }
   }
-
+  
   #*C) Combine disclosure risks----
   # If there is a disclosure risk destroy the matrix and vector (that should be returned to the client)
   if(!(y.invalid>0 || sum(mu.par.invalid)>0|| sum(sigma.par.invalid)>0 || sum(nu.par.invalid)>0 ||
@@ -593,5 +596,3 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
 } 
 # AGGREGATE FUNCTION
 # gamlssDS2
-
-

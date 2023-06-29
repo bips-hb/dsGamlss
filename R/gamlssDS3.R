@@ -214,30 +214,9 @@ gamlssDS3 <- function(parameter = parameter, smoother = smoother, formula = form
       base::assign(paste("Z", i, ".mat", sep=""), basismatrix, env=environment())
     }
   }
-  # save the design matrix for the current smoother for convenience
-  Z.mat <- eval(parse(text=paste("Z", smoother, ".mat", sep="")), env=environment())
   
-  ## calculate smoothing fitted value matrix s
-  # get the gamma vectors for the respective parameter & multiply them with the matrices
-  gamma.start <- 1
-  coefSmo <- eval(parse(text=paste("mod.gamlss.ds$", parameter, ".coefSmo", sep="")), env=environment())
-  if (!is.null(coefSmo)){
-    s <- NULL
-    for (i in 1:length(coefSmo)){
-      gamma.length <- dim(coefSmo[[i]]$coef)[1]
-      gamma.end <- gamma.start+gamma.length-1
-      gamma <- gamma.vect[gamma.start:gamma.end]
-      Z.mat <- eval(parse(text=paste("Z", i, ".mat", sep="")), env=environment())
-      s <- cbind(s, Z.mat %*% gamma)
-      gamma.start <- gamma.end+1
-    }
-  } else{
-    s <- rep(0, times=Ntotal)
-  }
-  s <- as.matrix(s)
-  
-  #*B) Update vectors----
-  ## Calculate predictor vector eta for the parameter
+  ## Get fitted values for all distribution parameters
+  # necessary for all parameters to calculate deviance
   if("mu" %in% names(family$parameters)){
     mu <- base::get("mu", env=parent.frame())
   }
@@ -250,6 +229,27 @@ gamlssDS3 <- function(parameter = parameter, smoother = smoother, formula = form
   if("tau" %in% names(family$parameters)){
     tau <- base::get("tau", env=parent.frame())
   }
+  
+  ## calculate smoothing fitted value matrix s
+  # get the gamma vectors for the respective parameter & multiply them with the matrices
+  gamma.start <- 1
+  coefSmo <- eval(parse(text=paste("mod.gamlss.ds$", parameter, ".coefSmo", sep="")), env=environment())
+  s.old <- base::get(paste(parameter, ".s", sep=""), env=parent.frame())
+  s <- NULL
+  for (i in 1:length(coefSmo)){
+    gamma.length <- dim(coefSmo[[i]]$coef)[1]
+    gamma.end <- gamma.start+gamma.length-1
+    gamma <- gamma.vect[gamma.start:gamma.end]
+    Z.mat <- eval(parse(text=paste("Z", i, ".mat", sep="")), env=environment())
+    s <- cbind(s, Z.mat %*% gamma)
+    gamma.start <- gamma.end+1
+  }
+  s <- as.matrix(s)
+  # save the design matrix for the current smoother for convenience
+  Z.mat <- eval(parse(text=paste("Z", smoother, ".mat", sep="")), env=environment())
+  
+  #*B) Update vectors----
+  ## Calculate predictor vector eta for the parameter
   eta <- eval(parse(text=paste("family$", parameter, ".linkfun(", parameter, ")", sep="")), env=environment())
   
   ## Calculate score and weights (for Fisher-scoring algorithm)
@@ -310,12 +310,9 @@ gamlssDS3 <- function(parameter = parameter, smoother = smoother, formula = form
     sumofsquares <- 0
     sumofweights <- 1
   } else {
-    old <- base::get("old", env=parent.frame())
-    sumofsquares <- sum((s[,(smoother-1)] - old)^2*wt)
+    sumofsquares <- sum((s[,(smoother-1)] - s.old[,(smoother-1)])^2*wt)
     sumofweights <- sum(wt)
   }
-  # save the smoothed fitted values for the current smoother
-  base::assign("old", as.vector(s[,smoother]), env=parent.frame())
   
   ## Update working variable vector wv
   wv <- eta+dldp/(dr*wt)

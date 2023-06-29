@@ -68,6 +68,8 @@
 #' algorithm), (iv) bf.tol (the convergence criterion (tolerance level) for the 
 #' backfitting algorithm). The default values for these 4 parameters are set to 
 #' c(0.001, 50, 30, 0.001).
+#' @param inner.iteration.count an integer specifying the iteration count for the inner
+#' iteration
 #' @return a gamlss object with all components as in the native R gamlss function. 
 #' Individual-level information like the components y (the response response) and 
 #' residuals (the normalised quantile residuals of the model) are not disclosed to 
@@ -86,7 +88,8 @@ gamlssDS5 <- function(parameter = parameter, formula = formula,
                       mu.gamma.vect = mu.gamma.vect, sigma.gamma.vect = sigma.gamma.vect,
                       nu.gamma.vect = nu.gamma.vect, tau.gamma.vect = tau.gamma.vect,
                       pb.xl = pb.xl, pb.xr = pb.xr,
-                      control = control, i.control = i.control){
+                      control = control, i.control = i.control,
+                      inner.iteration.count = inner.iteration.count){
   
   #**************************************************************************
   # I) Preparation ---- 
@@ -220,11 +223,27 @@ gamlssDS5 <- function(parameter = parameter, formula = formula,
     }
   }
   
+  ## Get fitted values for all distribution parameters
+  # necessary for all parameters to calculate deviance
+  if("mu" %in% names(family$parameters)){
+    mu <- base::get("mu", env=parent.frame())
+  }
+  if("sigma" %in% names(family$parameters)){
+    sigma <- base::get("sigma", env=parent.frame())
+  }
+  if("nu" %in% names(family$parameters)){
+    nu <- base::get("nu", env=parent.frame())
+  }
+  if("tau" %in% names(family$parameters)){
+    tau <- base::get("tau", env=parent.frame())
+  }
+  
   ## calculate smoothing fitted value matrix s
   # get the gamma vectors for the respective parameter & multiply them with the matrices
   gamma.start <- 1
   coefSmo <- eval(parse(text=paste("mod.gamlss.ds$", parameter, ".coefSmo", sep="")), env=environment())
   if (!is.null(coefSmo)){
+    s.old <- base::get(paste(parameter, ".s", sep=""), env=parent.frame())
     s <- NULL
     for (i in 1:length(coefSmo)){
       gamma.length <- dim(coefSmo[[i]]$coef)[1]
@@ -240,26 +259,26 @@ gamlssDS5 <- function(parameter = parameter, formula = formula,
   s <- as.matrix(s)
   
   #*B) Update distribution parameter vector----
-  if("mu" %in% names(family$parameters)){
-    mu <- base::get("mu", env=parent.frame())
-  }
-  if("sigma" %in% names(family$parameters)){
-    sigma <- base::get("sigma", env=parent.frame())
-  }
-  if("nu" %in% names(family$parameters)){
-    nu <- base::get("nu", env=parent.frame())
-  }
-  if("tau" %in% names(family$parameters)){
-    tau <- base::get("tau", env=parent.frame())
-  }
-  
   # Calculate predictor vector eta for the parameter
   eta.old <- eval(parse(text=paste("family$", parameter, ".linkfun(", parameter, ")", sep="")), env=environment())
   eta <- as.vector(X.mat %*% beta.vect + base::rowSums(as.matrix(s)))
-  step <- eval(parse(text=paste(parameter, ".step", sep="")), env=environment())
-  eta <- step*eta+(1-step)*eta.old
   
-  # Calculate the distribution parameter vector
+  # weight the new smoothing fitted value matrix and fitted eta with the old fitted values
+  # (except for the first iteration)
+  if (inner.iteration.count>1){
+    step <- eval(parse(text=paste(parameter, ".step", sep="")), env=environment())
+    eta <- step*eta+(1-step)*eta.old
+    if (!is.null(coefSmo)){
+      s <- step*s+(1-step)*s.old
+    }
+  }
+  
+  # Save the smooting fitted values
+  if(!is.null(coefSmo)){
+    base::assign(paste(parameter, ".s", sep=""), s, env=parent.frame())
+  }
+  
+  # Save the distribution parameter vector
   fv <- eval(parse(text=paste("family$", parameter, ".linkinv(eta)", sep="")), env=environment())
   base::assign(parameter, fv, env=parent.frame())
   
