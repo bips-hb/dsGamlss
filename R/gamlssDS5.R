@@ -68,7 +68,11 @@
 #' algorithm), (iv) bf.tol (the convergence criterion (tolerance level) for the 
 #' backfitting algorithm). The default values for these 4 parameters are set to 
 #' c(0.001, 50, 30, 0.001).
+#' @param autostep whether the steps should be halved automatically if the new global 
+#' deviance is greater that the old one. 
 #' @param inner.iteration.count an integer specifying the iteration count for the inner
+#' iteration
+#' @param autostep.count an integer specifying the iteration count for the autostep
 #' iteration
 #' @return a gamlss object with all components as in the native R gamlss function. 
 #' Individual-level information like the components y (the response response) and 
@@ -88,8 +92,9 @@ gamlssDS5 <- function(parameter = parameter, formula = formula,
                       mu.gamma.vect = mu.gamma.vect, sigma.gamma.vect = sigma.gamma.vect,
                       nu.gamma.vect = nu.gamma.vect, tau.gamma.vect = tau.gamma.vect,
                       pb.xl = pb.xl, pb.xr = pb.xr,
-                      control = control, i.control = i.control,
-                      inner.iteration.count = inner.iteration.count){
+                      control = control, i.control = i.control, autostep = autostep,
+                      inner.iteration.count = inner.iteration.count, 
+                      autostep.count = autostep.count){
   
   #**************************************************************************
   # I) Preparation ---- 
@@ -149,10 +154,10 @@ gamlssDS5 <- function(parameter = parameter, formula = formula,
   dev.function <- family$G.dev.incr
   
   c1 <- as.numeric(unlist(strsplit(control, split=",")))
-  mu.step <- c1[2]
-  sigma.step <- c1[3]
-  nu.step <- c1[4]
-  tau.step <- c1[5]
+  mu.step <- c1[3]
+  sigma.step <- c1[4]
+  nu.step <- c1[5]
+  tau.step <- c1[6]
   c2 <- as.numeric(unlist(strsplit(i.control, split=",")))
   
   # Convert parameter vectors from transmittable (character) format to numeric 
@@ -179,17 +184,16 @@ gamlssDS5 <- function(parameter = parameter, formula = formula,
   #*A) Fit the model ----
   # Now fit model specified in formula:
   # to increase computational speed the number of inner and backfitting iterations are set to 1
-  mod.gamlss.ds <- gamlss::gamlss(formula=formula2use, sigma.formula=sigma.formula2use, 
-                                  nu.formula=nu.formula2use, tau.formula=tau.formula2use,
-                                  family=family, data=data, method=RS(),
-                                  mu.fix=mu.fix, sigma.fix=sigma.fix, nu.fix=nu.fix,
-                                  tau.fix=tau.fix,
-                                  control = gamlss.control(c.crit=c1[1], n.cyc=1, 
-                                                           mu.step=c1[3], sigma.step=c1[4], 
-                                                           nu.step=c1[5], tau.step=c1[6],
-                                                           gd.tol=c1[7]),
-                                  i.control = glim.control(cc=c2[1], cyc=1, 
-                                                           bf.cyc=1, bf.tol=c2[4]))
+  mod.gamlss.ds <- base::suppressWarnings(gamlss::gamlss(formula=formula2use, sigma.formula=sigma.formula2use, 
+                                                         nu.formula=nu.formula2use, tau.formula=tau.formula2use,
+                                                         family=family, data=data, method=RS(), mu.fix=mu.fix, 
+                                                         sigma.fix=sigma.fix, nu.fix=nu.fix, tau.fix=tau.fix,
+                                                         control = gamlss.control(c.crit=c1[1], n.cyc=1, 
+                                                                                  mu.step=c1[3], sigma.step=c1[4], 
+                                                                                  nu.step=c1[5], tau.step=c1[6],
+                                                                                  gd.tol=c1[7], trace=FALSE),
+                                                         i.control = glim.control(cc=c2[1], cyc=1, 
+                                                                                  bf.cyc=1, bf.tol=c2[4])))
   
   ## get design matrix for the parameter
   X.mat <- as.matrix(eval(parse(text=paste("mod.gamlss.ds$", parameter, ".x", sep="")), env=environment()))
@@ -263,16 +267,27 @@ gamlssDS5 <- function(parameter = parameter, formula = formula,
   eta.old <- eval(parse(text=paste("family$", parameter, ".linkfun(", parameter, ")", sep="")), env=environment())
   eta <- as.vector(X.mat %*% beta.vect + base::rowSums(as.matrix(s)))
   
-  # weight the new smoothing fitted value matrix and fitted eta with the old fitted values
-  # (except for the first iteration)
-  if (inner.iteration.count>1){
-    step <- eval(parse(text=paste(parameter, ".step", sep="")), env=environment())
-    eta <- step*eta+(1-step)*eta.old
+  ## Weighting of the estimates
+  # weight the new smoothing fitted value matrix and fitted eta with the old fitted values to avoid overjumping
+  if (autostep){
+    # automatic halving of the step size (method 2 as described in Stasinopolous et al. 2020, p.66f)
+    eta <- (eta.old*(2**autostep.count - 1) - eta)/(2**(2+autostep.count-1)-2**autostep.count)
     if (!is.null(coefSmo)){
-      s <- step*s+(1-step)*s.old
+      s <- (s.old*(2**autostep.count - 1) - s)/(2**(2+autostep.count-1)-2**autostep.count)
+    }
+  } else {
+    # fixed step size (method 1 as described in Stasinopolous et al. 2020, p.66)
+    if (inner.iteration.count>1){ 
+      # no weighting for the first inner iteration (old estimates not reasonable)
+      step <- eval(parse(text=paste(parameter, ".step", sep="")), env=environment())
+      eta <- step*eta+(1-step)*eta.old
+      if (!is.null(coefSmo)){
+        s <- step*s+(1-step)*s.old
+      }
     }
   }
   
+  ## Save the new estimates
   # Save the smooting fitted values
   if(!is.null(coefSmo)){
     base::assign(paste(parameter, ".s", sep=""), s, env=parent.frame())
