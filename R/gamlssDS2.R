@@ -44,18 +44,6 @@
 #' vector of regression coefficients for nu at the current iteration.
 #' @param tau.beta.vect a numeric vector created by the clientside function specifying the
 #' vector of regression coefficients for tau at the current iteration.
-#' @param mu.gamma.vect a numeric vector created by the clientside function specifying the
-#' vector of smoothing regression coefficients for mu at the current iteration.
-#' @param sigma.gamma.vect a numeric vector created by the clientside function specifying the
-#' vector of smoothing regression coefficients for sigma at the current iteration.
-#' @param nu.gamma.vect a numeric vector created by the clientside function specifying the
-#' vector of smoothing regression coefficients for nu at the current iteration.
-#' @param tau.gamma.vect a numeric vector created by the clientside function specifying the
-#' vector of smoothing regression coefficients for tau at the current iteration.
-#' @param pb.xl a numeric vector created by the clientside function specifying the left
-#' boundary for the knots for the pb-smoother.
-#' @param pb.xr a numeric vector created by the clientside function specifying the right
-#' boundary for the knots for the pb-smoother.
 #' @param control this sets the control parameters of the outer iterations algorithm 
 #' using the gamlss.control function. This is a vector of 7 numeric values: (i) c.crit 
 #' (the convergence criterion for the algorithm), (ii) n.cyc (the number of cycles of 
@@ -85,9 +73,6 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
                       nu.formula = nu.formula, tau.formula = tau.formula, family = family, 
                       data = data, mu.beta.vect = mu.beta.vect, sigma.beta.vect = sigma.beta.vect,
                       nu.beta.vect = nu.beta.vect, tau.beta.vect = tau.beta.vect,
-                      mu.gamma.vect = mu.gamma.vect, sigma.gamma.vect = sigma.gamma.vect,
-                      nu.gamma.vect = nu.gamma.vect, tau.gamma.vect = tau.gamma.vect,
-                      pb.xl = pb.xl, pb.xr = pb.xr,
                       control = control, i.control = i.control){
   
   #**************************************************************************
@@ -163,18 +148,9 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   sigma.beta.vect <- as.numeric(unlist(strsplit(sigma.beta.vect, split=",")))
   nu.beta.vect <- as.numeric(unlist(strsplit(nu.beta.vect, split=",")))
   tau.beta.vect <- as.numeric(unlist(strsplit(tau.beta.vect, split=",")))
-  mu.gamma.vect <- as.numeric(unlist(strsplit(mu.gamma.vect, split=",")))
-  sigma.gamma.vect <- as.numeric(unlist(strsplit(sigma.gamma.vect, split=",")))
-  nu.gamma.vect <- as.numeric(unlist(strsplit(nu.gamma.vect, split=",")))
-  tau.gamma.vect <- as.numeric(unlist(strsplit(tau.gamma.vect, split=",")))
   # get the beta and gammma vectors for the respective parameter
   beta.vect <- eval(parse(text=paste(parameter, ".beta.vect", sep="")), env=environment())
-  gamma.vect <- eval(parse(text=paste(parameter, ".gamma.vect", sep="")), env=environment())
-  
-  # Convert knot boundaries from transmittable (character) format to numeric
-  pb.xl <- as.numeric(unlist(strsplit(pb.xl, split=",")))
-  pb.xr <- as.numeric(unlist(strsplit(pb.xr, split=",")))
-  
+ 
   ## Get the variable names
   # Rewrite formulas extracting variables nested in structures like data frame or list
   # (e.g. D$A~D$B will be re-written A~B)
@@ -259,34 +235,6 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   X.mat <- as.matrix(eval(parse(text=paste("mod.gamlss.ds$", parameter, ".x", sep="")), env=environment()))
   y <- as.vector(mod.gamlss.ds$y)
   
-  ## get design matrix for the smoothers
-  # identify the variables for pb-smoothers (for all parameters)
-  mu.coef.names <- names(mod.gamlss.ds$mu.coefficients)
-  sigma.coef.names <- names(mod.gamlss.ds$sigma.coefficients)
-  nu.coef.names <- names(mod.gamlss.ds$nu.coefficients)
-  tau.coef.names <- names(mod.gamlss.ds$tau.coefficients)
-  smoother.names <- c(mu.coef.names, sigma.coef.names, nu.coef.names, tau.coef.names)
-  pb.names <- smoother.names[grep(pattern="pb(", x=smoother.names, fixed=TRUE)]
-  pb.names <- unique(pb.names)
-  pb.names <- gsub(pattern="pb(", replacement="", pb.names, fixed=TRUE)
-  pb.names <- gsub(pattern=")", replacement="", pb.names, fixed=TRUE)
-  # only extract the variables that are relevant for the current parameter
-  coef.names <- eval(parse(text=paste(parameter, ".coef.names", sep="")), env=environment())
-  pb.names.parameter <- coef.names[grep(pattern="pb(", x=coef.names, fixed=TRUE)]
-  pb.names.parameter <- gsub(pattern="pb(", replacement="", pb.names.parameter, fixed=TRUE)
-  pb.names.parameter <- gsub(pattern=")", replacement="", pb.names.parameter, fixed=TRUE)
-  pb.xl.parameter <- pb.xl[which(pb.names %in% pb.names.parameter)]
-  pb.xr.parameter <- pb.xr[which(pb.names %in% pb.names.parameter)]
-  # create design matrices for them
-  if(length(pb.names.parameter)>0){
-    for (i in 1:length(pb.names.parameter)){
-      name <- eval(parse(text=paste("pb.names.parameter[", i, "]", sep="")), env=environment())
-      x <- eval(parse(text=name), env=parent.frame())
-      basismatrix <- bbase(x=x, xl=pb.xl.parameter[i], xr=pb.xr.parameter[i])
-      base::assign(paste("Z", i, ".mat", sep=""), basismatrix, env=environment())
-    }
-  }
-  
   ## Get fitted values for all distribution parameters
   # necessary for all parameters to calculate deviance
   if("mu" %in% names(family$parameters)){
@@ -302,20 +250,10 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
     tau <- base::get("tau", env=parent.frame())
   }
   
-  ## calculate smoothing fitted value matrix s
-  # get the gamma vectors for the respective parameter & multiply them with the matrices
-  gamma.start <- 1
+  ## Get smoothing fitted value matrix s
   coefSmo <- eval(parse(text=paste("mod.gamlss.ds$", parameter, ".coefSmo", sep="")), env=environment())
   if (!is.null(coefSmo)){
-    s <- NULL
-    for (i in 1:length(coefSmo)){
-      gamma.length <- dim(coefSmo[[i]]$coef)[1]
-      gamma.end <- gamma.start+gamma.length-1
-      gamma <- gamma.vect[gamma.start:gamma.end]
-      Z.mat <- eval(parse(text=paste("Z", i, ".mat", sep="")), env=environment())
-      s <- cbind(s, Z.mat %*% gamma)
-      gamma.start <- gamma.end+1
-    }
+    s <- base::get(paste(parameter, ".s", sep=""), env=parent.frame())
   } else{
     s <- rep(0, times=Ntotal)
   }

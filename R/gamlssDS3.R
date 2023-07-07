@@ -176,7 +176,7 @@ gamlssDS3 <- function(parameter = parameter, smoother = smoother, formula = form
   # Now fit model specified in formula:
   # to increase computational speed the number of inner and backfitting iterations are set to 1
   # suppressWarnings to avoid the warning that the algorithm has not yet converged
-  mod.gamlss.ds <- base:suppressWarnings(gamlss::gamlss(formula=formula2use, sigma.formula=sigma.formula2use, 
+  mod.gamlss.ds <- base::suppressWarnings(gamlss::gamlss(formula=formula2use, sigma.formula=sigma.formula2use, 
                                                         nu.formula=nu.formula2use, tau.formula=tau.formula2use,
                                                         family=family, data=data, method=RS(), mu.fix=mu.fix, 
                                                         sigma.fix=sigma.fix, nu.fix=nu.fix, tau.fix=tau.fix,
@@ -209,13 +209,16 @@ gamlssDS3 <- function(parameter = parameter, smoother = smoother, formula = form
   pb.names.parameter <- gsub(pattern=")", replacement="", pb.names.parameter, fixed=TRUE)
   pb.xl.parameter <- pb.xl[which(pb.names %in% pb.names.parameter)]
   pb.xr.parameter <- pb.xr[which(pb.names %in% pb.names.parameter)]
-  # create design matrices for them
-  if(length(pb.names.parameter)>0){
-    for (i in 1:length(pb.names.parameter)){
-      name <- eval(parse(text=paste("pb.names.parameter[", i, "]", sep="")), env=environment())
-      x <- eval(parse(text=name), env=parent.frame())
-      basismatrix <- bbase(x=x, xl=pb.xl.parameter[i], xr=pb.xr.parameter[i])
-      base::assign(paste("Z", i, ".mat", sep=""), basismatrix, env=environment())
+  # create design matrices for current & previous smoother if possible
+  if(length(pb.names.parameter[smoother])>0){
+    name <- eval(parse(text=paste("pb.names.parameter[", smoother, "]", sep="")), env=environment())
+    x <-  eval(parse(text=name), env=parent.frame())
+    Z.mat <- bbase(x=x, xl=pb.xl.parameter[smoother], xr=pb.xr.parameter[smoother])
+    # get design matrix for previous smoother if possible
+    if (smoother>1){
+      name <- eval(parse(text=paste("pb.names.parameter[", smoother, "]", sep="")), env=environment())
+      x <-  eval(parse(text=name), env=parent.frame())
+      Z.mat.old <- bbase(x=x, xl=pb.xl.parameter[smoother-1], xr=pb.xr.parameter[smoother-1])
     }
   }
   
@@ -234,23 +237,27 @@ gamlssDS3 <- function(parameter = parameter, smoother = smoother, formula = form
     tau <- base::get("tau", env=parent.frame())
   }
   
-  ## calculate smoothing fitted value matrix s
-  # get the gamma vectors for the respective parameter & multiply them with the matrices
+  ## Calculate smoothing fitted value matrix s
   gamma.start <- 1
   coefSmo <- eval(parse(text=paste("mod.gamlss.ds$", parameter, ".coefSmo", sep="")), env=environment())
   s.old <- base::get(paste(parameter, ".s", sep=""), env=parent.frame())
-  s <- NULL
+  # get the gamma vectors for the respective parameter & multiply them with the matrices
   for (i in 1:length(coefSmo)){
     gamma.length <- dim(coefSmo[[i]]$coef)[1]
     gamma.end <- gamma.start+gamma.length-1
     gamma <- gamma.vect[gamma.start:gamma.end]
-    Z.mat <- eval(parse(text=paste("Z", i, ".mat", sep="")), env=environment())
-    s <- cbind(s, Z.mat %*% gamma)
+    # calculate new smoothing fitted values for previous smoother
+    if (i == (smoother-1)){
+      s.update <- as.vector(Z.mat.old %*% gamma)
+    }
     gamma.start <- gamma.end+1
   }
-  s <- as.matrix(s)
-  # save the design matrix for the current smoother for convenience
-  Z.mat <- eval(parse(text=paste("Z", smoother, ".mat", sep="")), env=environment())
+  s <- s.old
+  # update smoothing fitted value matrix for previous smoother
+  if (smoother>1){
+    s[,(smoother-1)] <- s.update
+    base::assign(paste(parameter, ".s", sep=""), s, env=parent.frame())
+  }
   
   #*B) Update vectors----
   ## Calculate predictor vector eta for the parameter
@@ -306,8 +313,7 @@ gamlssDS3 <- function(parameter = parameter, smoother = smoother, formula = form
   wt <- ifelse(wt>1e+10,1e+10,wt)
   wt <- ifelse(wt<1e-10,1e-10,wt)
   
-  ## save smoothing fitted value
-  # (stopping criterion for backfitting)
+  ## stopping criterion for backfitting
   # the sums are necessary to calculate deltaf on the server which is needed to determine
   # the stoppping criterion for backfitting
   if (smoother==1){

@@ -210,14 +210,12 @@ gamlssDS4 <- function(parameter = parameter, formula = formula,
   pb.names.parameter <- gsub(pattern=")", replacement="", pb.names.parameter, fixed=TRUE)
   pb.xl.parameter <- pb.xl[which(pb.names %in% pb.names.parameter)]
   pb.xr.parameter <- pb.xr[which(pb.names %in% pb.names.parameter)]
-  # create design matrices for them
-  if(length(pb.names.parameter)>0){
-    for (i in 1:length(pb.names.parameter)){
-      name <- eval(parse(text=paste("pb.names.parameter[", i, "]", sep="")), env=environment())
-      x <- eval(parse(text=name), env=parent.frame())
-      basismatrix <- bbase(x=x, xl=pb.xl.parameter[i], xr=pb.xr.parameter[i])
-      base::assign(paste("Z", i, ".mat", sep=""), basismatrix, env=environment())
-    }
+  # get design matrix for last smoother
+  lastsmoother <- length(pb.names.parameter)
+  if(length(pb.names.parameter[lastsmoother])>0){
+    name <- eval(parse(text=paste("pb.names.parameter[", lastsmoother, "]", sep="")), env=environment())
+    x <- eval(parse(text=name), env=parent.frame())
+    Z.mat.old <- bbase(x=x, xl=pb.xl.parameter[lastsmoother], xr=pb.xr.parameter[lastsmoother])
   }
   
   ## Get fitted values for all distribution parameters
@@ -236,24 +234,24 @@ gamlssDS4 <- function(parameter = parameter, formula = formula,
   }
   
   ## calculate smoothing fitted value matrix s
-  # get the gamma vectors for the respective parameter & multiply them with the matrices
   gamma.start <- 1
   coefSmo <- eval(parse(text=paste("mod.gamlss.ds$", parameter, ".coefSmo", sep="")), env=environment())
-  if (!is.null(coefSmo)){
-    s.old <- base::get(paste(parameter, ".s", sep=""), env=parent.frame())
-    s <- NULL
-    for (i in 1:length(coefSmo)){
-      gamma.length <- dim(coefSmo[[i]]$coef)[1]
-      gamma.end <- gamma.start+gamma.length-1
-      gamma <- gamma.vect[gamma.start:gamma.end]
-      Z.mat <- eval(parse(text=paste("Z", i, ".mat", sep="")), env=environment())
-      s <- cbind(s, Z.mat %*% gamma)
-      gamma.start <- gamma.end+1
+  s.old <- base::get(paste(parameter, ".s", sep=""), env=parent.frame())
+  # get the gamma vectors for the respective parameter & multiply them with the matrices
+  for (i in 1:length(coefSmo)){
+    gamma.length <- dim(coefSmo[[i]]$coef)[1]
+    gamma.end <- gamma.start+gamma.length-1
+    gamma <- gamma.vect[gamma.start:gamma.end]
+    # calculate new smoothing fitted values for previous smoother
+    if (i == lastsmoother){
+      s.update <- as.vector(Z.mat.old %*% gamma)
     }
-  } else{
-    s <- rep(0, times=Ntotal)
+    gamma.start <- gamma.end+1
   }
-  s <- as.matrix(s)
+  s <- s.old
+  # update smoothing fitted value matrix for previous smoother
+  s[,(lastsmoother)] <- s.update
+  base::assign(paste(parameter, ".s", sep=""), s, env=parent.frame())
   
   #*B) Calculate deviance ----
   ## Calculate predictor vector eta for the parameter
@@ -313,7 +311,7 @@ gamlssDS4 <- function(parameter = parameter, formula = formula,
   ## stoppping criterion for backfitting
   # the sums are necessary to calculate deltaf on the server which is needed to determine
   # the stoppping criterion for backfitting
-  sumofsquares <- sum((s[,length(coefSmo)] - s.old[,length(coefSmo)])^2*wt)
+  sumofsquares <- sum((s[,lastsmoother] - s.old[,lastsmoother])^2*wt)
   sumofweights <- sum(wt)
   # sum over all smoothing fitted values for one observation (& return sum over all observations)
   sumofsmoothers <- sum(wt*apply(s,1,sum)^2)
