@@ -2,7 +2,7 @@
 #' @title gamlssDS1 called by ds.gamlss
 #' @description This is the first serverside aggregate function called by ds.gamlss.
 #' @details It is an aggregation function that sets up the model structure and creates
-#' the starting beta vectors that feeds, via ds.gamlss into gamlssDS2 to enable iterative
+#' the starting beta and gamma vectors that feeds, via ds.gamlss into gamlssDS2 to enable iterative
 #' fitting of the gamlss model that has been specified. For more details please see the 
 #' extensive header of ds.gamlss and also the gamlss function in native R gamlss package.
 #' @param formula a formula object, with the response on the left of an ~ operator, 
