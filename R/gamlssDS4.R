@@ -1,11 +1,13 @@
 #'
 #' @title gamlssDS4 called by ds.gamlss
 #' @description This is the fourth serverside aggregate function called by ds.gamlss.
-#' @details It is an aggregation function that checks whether the backfitting iteration converged.
+#' @details It is an aggregation function that returns the required matrix and inner product
+#' to estimate the smoothing parameter lambda with the ML method.
 #' For more details please see the extensive header of ds.gamlss and also the
 #' gamlss function in native R gamlss package.
 #' @param parameter a string specifing for which of the model parameters "mu", "sigma", "nu"
 #' or "tau" the model fitting should be performed
+#' @param smoother an integer indicating the number of the smoother that should be fitted
 #' @param formula a formula object, with the response on the left of an ~ operator, 
 #' and the terms, separated by + operators, on the right. Nonparametric smoothing
 #' terms are indicated by pb() for penalised beta splines, cs for smoothing splines, 
@@ -77,7 +79,7 @@
 #' @export
 #'
 
-gamlssDS4 <- function(parameter = parameter, formula = formula, 
+gamlssDS4 <- function(parameter = parameter, smoother = smoother, formula = formula, 
                       sigma.formula = sigma.formula, nu.formula = nu.formula, 
                       tau.formula = tau.formula, family = family, data = data, 
                       mu.beta.vect = mu.beta.vect, sigma.beta.vect = sigma.beta.vect,
@@ -167,10 +169,7 @@ gamlssDS4 <- function(parameter = parameter, formula = formula,
   pb.xr <- as.numeric(unlist(strsplit(pb.xr, split=",")))
   
   #**************************************************************************
-  # II) Calculate sums to return to client ----  
-  # the sums can be used to determine the stopping criterion for the 
-  # backfitting on the client side, i.e. the change in the smoothing fitted
-  # values (deltaf)
+  # II) Calculate matrix & vector to return to client ----  
   #**************************************************************************
   
   #*A) Fit the model ----
@@ -210,12 +209,16 @@ gamlssDS4 <- function(parameter = parameter, formula = formula,
   pb.names.parameter <- gsub(pattern=")", replacement="", pb.names.parameter, fixed=TRUE)
   pb.xl.parameter <- pb.xl[which(pb.names %in% pb.names.parameter)]
   pb.xr.parameter <- pb.xr[which(pb.names %in% pb.names.parameter)]
-  # get design matrix for last smoother
-  lastsmoother <- length(pb.names.parameter)
-  if(length(pb.names.parameter[lastsmoother])>0){
-    name <- eval(parse(text=paste("pb.names.parameter[", lastsmoother, "]", sep="")), env=environment())
-    x <- eval(parse(text=name), env=parent.frame())
-    Z.mat.old <- bbase(x=x, xl=pb.xl.parameter[lastsmoother], xr=pb.xr.parameter[lastsmoother])
+  # create design matrices for all smoothers
+  Z.mat <- NULL
+  if(length(pb.names.parameter)>0){
+    for (i in 1:length(pb.names.parameter)){
+      name <- eval(parse(text=paste("pb.names.parameter[", i, "]", sep="")), env=environment())
+      x <- eval(parse(text=name), env=parent.frame())
+      basismatrix <- bbase(x=x, xl=pb.xl.parameter[i], xr=pb.xr.parameter[i])
+      base::assign(paste("Z", i, ".mat", sep=""), basismatrix, env=environment())
+      Z.mat <- cbind(Z.mat, basismatrix)
+    }
   }
   
   ## Get fitted values for all distribution parameters
@@ -232,28 +235,14 @@ gamlssDS4 <- function(parameter = parameter, formula = formula,
   if("tau" %in% names(family$parameters)){
     tau <- base::get("tau", env=parent.frame())
   }
-  
-  ## calculate smoothing fitted value matrix s
-  gamma.start <- 1
+
+  ## Get smoothing fitted value matrix s
   coefSmo <- eval(parse(text=paste("mod.gamlss.ds$", parameter, ".coefSmo", sep="")), env=environment())
-  s.old <- base::get(paste(parameter, ".s", sep=""), env=parent.frame())
-  # get the gamma vectors for the respective parameter & multiply them with the matrices
-  for (i in 1:length(coefSmo)){
-    gamma.length <- dim(coefSmo[[i]]$coef)[1]
-    gamma.end <- gamma.start+gamma.length-1
-    gamma <- gamma.vect[gamma.start:gamma.end]
-    # calculate new smoothing fitted values for previous smoother
-    if (i == lastsmoother){
-      s.update <- as.vector(Z.mat.old %*% gamma)
-    }
-    gamma.start <- gamma.end+1
+  if (!is.null(coefSmo)){
+    s <- base::get(paste(parameter, ".s", sep=""), env=parent.frame())
   }
-  s <- s.old
-  # update smoothing fitted value matrix for previous smoother
-  s[,(lastsmoother)] <- s.update
-  base::assign(paste(parameter, ".s", sep=""), s, env=parent.frame())
   
-  #*B) Calculate deviance ----
+  #*B) Update vectors----
   ## Calculate predictor vector eta for the parameter
   eta <- eval(parse(text=paste("family$", parameter, ".linkfun(", parameter, ")", sep="")), env=environment())
   
@@ -307,21 +296,30 @@ gamlssDS4 <- function(parameter = parameter, formula = formula,
   wt <- ifelse(wt>1e+10,1e+10,wt)
   wt <- ifelse(wt<1e-10,1e-10,wt)
   
-  #*C) Calculate sums ----
-  ## stoppping criterion for backfitting
-  # the sums are necessary to calculate deltaf on the server which is needed to determine
-  # the stoppping criterion for backfitting
-  sumofsquares <- sum((s[,lastsmoother] - s.old[,lastsmoother])^2*wt)
-  sumofweights <- sum(wt)
-  # sum over all smoothing fitted values for one observation (& return sum over all observations)
-  sumofsmoothers <- sum(wt*apply(s,1,sum)^2)
+  ## Update working variable vector wv
+  wv <- eta+dldp/(dr*wt)
+  if (family$type=="Mixed"){
+    wv <-ifelse(is.nan(wv),0,wv)
+  }
+  
+  #*C) Calculate matrix & vectors ----
+  ## Calculate partial residuals
+  partial.residuals <- wv - X.mat %*% beta.vect - base::rowSums(as.matrix(s[,-smoother]))
+  fitted.partial.residuals <- Z.mat %*% gamma.vect
+  
+  ## Calculate matrix and inner product to return to the client
+  global.matrix <- t(Z.mat) %*% diag(wt) %*% Z.mat
+  inner.product <- sum(wt*(partial.residuals - fitted.partial.residuals)^2)
+  # remove the dimnames attributes
+  attr(vector, "dimnames") <- NULL
+  attr(matrix, "dimnames") <- NULL
+  
   
   #**************************************************************************
   # III) Output ----
   #**************************************************************************
   
-  return(list(sumofsquares=sumofsquares, sumofweights=sumofweights,
-              sumofsmoothers=sumofsmoothers))
+  return(list(global.matrix=global.matrix, inner.product=inner.product))
   
 } 
 # AGGREGATE FUNCTION
