@@ -310,6 +310,7 @@ gamlssDS4 <- function(parameter = parameter, smoother = smoother, formula = form
   ## Calculate matrix and inner product to return to the client
   global.matrix <- t(Z.mat) %*% diag(wt) %*% Z.mat
   inner.product <- sum(wt*(partial.residuals - fitted.partial.residuals)^2)
+
   # remove the dimnames attributes
   attr(vector, "dimnames") <- NULL
   attr(matrix, "dimnames") <- NULL
