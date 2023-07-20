@@ -1,8 +1,9 @@
 #'
-#' @title gamlssDS5 called by ds.gamlss
-#' @description This is the fifth serverside aggregate function called by ds.gamlss.
-#' @details It is an aggregation function that checks whether the backfitting iteration converged.
-#' For more details please see the extensive header of ds.gamlss and also the
+#' @title gamlssDS6 called by ds.gamlss
+#' @description This is the sixth serverside aggregate function called by ds.gamlss.
+#' @details It is an aggregation function that updates the distribution parameters and returns
+#' the current deviance. The deviance can then be used on the client side to check whether the
+#' innter iteration converged. For more details please see the extensive header of ds.gamlss and also the
 #' gamlss function in native R gamlss package.
 #' @param parameter a string specifing for which of the model parameters "mu", "sigma", "nu"
 #' or "tau" the model fitting should be performed
@@ -67,6 +68,12 @@
 #' algorithm), (iv) bf.tol (the convergence criterion (tolerance level) for the 
 #' backfitting algorithm). The default values for these 4 parameters are set to 
 #' c(0.001, 50, 30, 0.001).
+#' @param autostep whether the steps should be halved automatically if the new global 
+#' deviance is greater that the old one. 
+#' @param inner.iteration.count an integer specifying the iteration count for the inner
+#' iteration
+#' @param autostep.count an integer specifying the iteration count for the autostep
+#' iteration
 #' @return a gamlss object with all components as in the native R gamlss function. 
 #' Individual-level information like the components y (the response response) and 
 #' residuals (the normalised quantile residuals of the model) are not disclosed to 
@@ -77,7 +84,7 @@
 #' @export
 #'
 
-gamlssDS5 <- function(parameter = parameter, formula = formula, 
+gamlssDS6 <- function(parameter = parameter, formula = formula, 
                       sigma.formula = sigma.formula, nu.formula = nu.formula, 
                       tau.formula = tau.formula, family = family, data = data, 
                       mu.beta.vect = mu.beta.vect, sigma.beta.vect = sigma.beta.vect,
@@ -85,7 +92,9 @@ gamlssDS5 <- function(parameter = parameter, formula = formula,
                       mu.gamma.vect = mu.gamma.vect, sigma.gamma.vect = sigma.gamma.vect,
                       nu.gamma.vect = nu.gamma.vect, tau.gamma.vect = tau.gamma.vect,
                       pb.xl = pb.xl, pb.xr = pb.xr,
-                      control = control, i.control = i.control){
+                      control = control, i.control = i.control, autostep = autostep,
+                      inner.iteration.count = inner.iteration.count, 
+                      autostep.count = autostep.count){
   
   #**************************************************************************
   # I) Preparation ---- 
@@ -146,7 +155,13 @@ gamlssDS5 <- function(parameter = parameter, formula = formula,
   family <- gsub("comma_symbol", ",", family, fixed = TRUE)
   family <- gamlss.dist::as.family(eval(parse(text=family), env=environment()))
   
+  dev.function <- family$G.dev.incr
+  
   c1 <- as.numeric(unlist(strsplit(control, split=",")))
+  mu.step <- c1[3]
+  sigma.step <- c1[4]
+  nu.step <- c1[5]
+  tau.step <- c1[6]
   c2 <- as.numeric(unlist(strsplit(i.control, split=",")))
   
   # Convert parameter vectors from transmittable (character) format to numeric 
@@ -167,26 +182,22 @@ gamlssDS5 <- function(parameter = parameter, formula = formula,
   pb.xr <- as.numeric(unlist(strsplit(pb.xr, split=",")))
   
   #**************************************************************************
-  # II) Calculate sums to return to client ----  
-  # the sums can be used to determine the stopping criterion for the 
-  # backfitting on the client side, i.e. the change in the smoothing fitted
-  # values (deltaf)
+  # II) Update distribution parameter vector ----  
   #**************************************************************************
   
   #*A) Fit the model ----
   # Now fit model specified in formula:
   # to increase computational speed the number of inner and backfitting iterations are set to 1
-  # suppressWarnings to avoid the warning that the algorithm has not yet converged
   mod.gamlss.ds <- base::suppressWarnings(gamlss::gamlss(formula=formula2use, sigma.formula=sigma.formula2use, 
                                                          nu.formula=nu.formula2use, tau.formula=tau.formula2use,
                                                          family=family, data=data, method=RS(), mu.fix=mu.fix, 
                                                          sigma.fix=sigma.fix, nu.fix=nu.fix, tau.fix=tau.fix,
-                                                         control=gamlss.control(c.crit=c1[1], n.cyc=1, 
-                                                                                mu.step=c1[3], sigma.step=c1[4], 
-                                                                                nu.step=c1[5], tau.step=c1[6],
-                                                                                gd.tol=c1[7], trace=FALSE),
-                                                         i.control=glim.control(cc=c2[1], cyc=1, 
-                                                                                bf.cyc=1, bf.tol=c2[4])))
+                                                         control = gamlss.control(c.crit=c1[1], n.cyc=1, 
+                                                                                  mu.step=c1[3], sigma.step=c1[4], 
+                                                                                  nu.step=c1[5], tau.step=c1[6],
+                                                                                  gd.tol=c1[7], trace=FALSE),
+                                                         i.control = glim.control(cc=c2[1], cyc=1, 
+                                                                                  bf.cyc=1, bf.tol=c2[4])))
   
   ## get design matrix for the parameter
   X.mat <- as.matrix(eval(parse(text=paste("mod.gamlss.ds$", parameter, ".x", sep="")), env=environment()))
@@ -210,12 +221,14 @@ gamlssDS5 <- function(parameter = parameter, formula = formula,
   pb.names.parameter <- gsub(pattern=")", replacement="", pb.names.parameter, fixed=TRUE)
   pb.xl.parameter <- pb.xl[which(pb.names %in% pb.names.parameter)]
   pb.xr.parameter <- pb.xr[which(pb.names %in% pb.names.parameter)]
-  # get design matrix for last smoother
-  lastsmoother <- length(pb.names.parameter)
-  if(length(pb.names.parameter[lastsmoother])>0){
-    name <- eval(parse(text=paste("pb.names.parameter[", lastsmoother, "]", sep="")), env=environment())
-    x <- eval(parse(text=name), env=parent.frame())
-    Z.mat.old <- bbase(x=x, xl=pb.xl.parameter[lastsmoother], xr=pb.xr.parameter[lastsmoother])
+  # create design matrices for them
+  if(length(pb.names.parameter)>0){
+    for (i in 1:length(pb.names.parameter)){
+      name <- eval(parse(text=paste("pb.names.parameter[", i, "]", sep="")), env=environment())
+      x <- eval(parse(text=name), env=parent.frame())
+      basismatrix <- bbase(x=x, xl=pb.xl.parameter[i], xr=pb.xr.parameter[i])
+      base::assign(paste("Z", i, ".mat", sep=""), basismatrix, env=environment())
+    }
   }
   
   ## Get fitted values for all distribution parameters
@@ -234,96 +247,91 @@ gamlssDS5 <- function(parameter = parameter, formula = formula,
   }
   
   ## calculate smoothing fitted value matrix s
+  # get the gamma vectors for the respective parameter & multiply them with the matrices
   gamma.start <- 1
   coefSmo <- eval(parse(text=paste("mod.gamlss.ds$", parameter, ".coefSmo", sep="")), env=environment())
-  s.old <- base::get(paste(parameter, ".s", sep=""), env=parent.frame())
-  # get the gamma vectors for the respective parameter & multiply them with the matrices
-  for (i in 1:length(coefSmo)){
-    gamma.length <- dim(coefSmo[[i]]$coef)[1]
-    gamma.end <- gamma.start+gamma.length-1
-    gamma <- gamma.vect[gamma.start:gamma.end]
-    # calculate new smoothing fitted values for previous smoother
-    if (i == lastsmoother){
-      s.update <- as.vector(Z.mat.old %*% gamma)
+  if (!is.null(coefSmo)){
+    s.old <- base::get(paste(parameter, ".s", sep=""), env=parent.frame())
+    s <- NULL
+    for (i in 1:length(coefSmo)){
+      gamma.length <- dim(coefSmo[[i]]$coef)[1]
+      gamma.end <- gamma.start+gamma.length-1
+      gamma <- gamma.vect[gamma.start:gamma.end]
+      Z.mat <- eval(parse(text=paste("Z", i, ".mat", sep="")), env=environment())
+      s <- cbind(s, Z.mat %*% gamma)
+      gamma.start <- gamma.end+1
     }
-    gamma.start <- gamma.end+1
+  } else{
+    s <- rep(0, times=Ntotal)
   }
-  s <- s.old
-  # update smoothing fitted value matrix for previous smoother
-  s[,(lastsmoother)] <- s.update
-  base::assign(paste(parameter, ".s", sep=""), s, env=parent.frame())
+  s <- as.matrix(s)
   
-  #*B) Calculate deviance ----
-  ## Calculate predictor vector eta for the parameter
-  eta <- eval(parse(text=paste("family$", parameter, ".linkfun(", parameter, ")", sep="")), env=environment())
+  #*B) Update distribution parameter vector----
+  # Calculate predictor vector eta for the parameter
+  eta.old <- eval(parse(text=paste("family$", parameter, ".linkfun(", parameter, ")", sep="")), env=environment())
+  eta <- as.vector(X.mat %*% beta.vect + base::rowSums(as.matrix(s)))
   
-  ## Calculate score and weights (for Fisher-scoring algorithm)
-  dr <- eval(parse(text=paste("family$", parameter, ".dr(eta)", sep="")), env=environment())  # dparameter/ deta
-  dr <- 1/dr  # deta/ dparameter = 1/ (dparameter/ deta)
+  ## Weighting of the estimates
+  # weight the new smoothing fitted value matrix and fitted eta with the old fitted values to avoid overjumping
+  if (autostep){
+    # automatic halving of the step size (method 2 as described in Stasinopolous et al. 2020, p.66f)
+    eta <- (eta.old*(2**autostep.count - 1) - eta)/(2**(2+autostep.count-1)-2**autostep.count)
+    if (!is.null(coefSmo)){
+      s <- (s.old*(2**autostep.count - 1) - s)/(2**(2+autostep.count-1)-2**autostep.count)
+    }
+  } else {
+    # fixed step size (method 1 as described in Stasinopolous et al. 2020, p.66)
+    if (inner.iteration.count>1){ 
+      # no weighting for the first inner iteration (old estimates not reasonable)
+      step <- eval(parse(text=paste(parameter, ".step", sep="")), env=environment())
+      eta <- step*eta+(1-step)*eta.old
+      if (!is.null(coefSmo)){
+        s <- step*s+(1-step)*s.old
+      }
+    }
+  }
   
-  # get the first and second derivatives of the log-likelihood
+  ## Save the new estimates
+  # Save the smooting fitted values
+  if(!is.null(coefSmo)){
+    base::assign(paste(parameter, ".s", sep=""), s, env=parent.frame())
+  }
+  
+  # Save the distribution parameter vector
+  fv <- eval(parse(text=paste("family$", parameter, ".linkinv(eta)", sep="")), env=environment())
+  base::assign(parameter, fv, env=parent.frame())
+  
+  ## Calculate deviance
   if (parameter=="mu"){
-    fv <- mu
-    # first derivative of log-likelihood
-    dldp.function <- family$dldm
-    formals(dldp.function, env=new.env()) <- alist(mu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
-    # second derivative of log-likelihood
-    d2ldp2.function <- family$d2ldm2
-    formals(d2ldp2.function, env=new.env()) <- alist(mu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    formals(dev.function, env=new.env()) <- alist(mu = fv)
   }
   if (parameter=="sigma"){
-    fv <- sigma
-    # first derivative of log-likelihood
-    dldp.function <- family$dldd
-    formals(dldp.function, env=new.env()) <- alist(sigma = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
-    # second derivative of log-likelihood
-    d2ldp2.function <- family$d2ldd2
-    formals(d2ldp2.function, env=new.env()) <- alist(sigma = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    formals(dev.function, env=new.env()) <- alist(sigma = fv)
   }
   if (parameter=="nu"){
-    fv <- nu
-    # first derivative of log-likelihood
-    dldp.function <- family$dldv
-    formals(dldp.function, env=new.env()) <- alist(nu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
-    # second derivative of log-likelihood
-    d2ldp2.function <- family$d2ldv2
-    formals(d2ldp2.function, env=new.env()) <- alist(nu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    formals(dev.function, env=new.env()) <- alist(nu = fv)
   }
   if (parameter=="tau"){
-    fv <- tau
-    # first derivative of log-likelihood
-    dldp.function <- family$dldt
-    formals(dldp.function, env=new.env()) <- alist(tau = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
-    # second derivative of log-likelihood
-    d2ldp2.function <- family$d2ldt2
-    formals(d2ldp2.function, env=new.env()) <- alist(tau = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    formals(dev.function, env=new.env()) <- alist(tau = fv)
   }
+  di <- dev.function(fv)  # deviance increment
+  dv <- sum(di)  # the global deviance on the server
   
-  dldp <- dldp.function(fv)  # first derivative of log-likelihood with respect to parameter
-  d2ldp2 <- d2ldp2.function(fv)  # expected  second derivative of log-Likelihood with respect to parameter
-  d2ldp2 <- ifelse(d2ldp2 < -1e-15, d2ldp2, -1e-15)
-  wt <- -(d2ldp2/(dr*dr)) # weights for Fisher-scoring algorithm =-(d2l/d2p)(dparameter/deta)^2
-  # we need to stop the weights to go to Infty
-  wt <- ifelse(wt>1e+10,1e+10,wt)
-  wt <- ifelse(wt<1e-10,1e-10,wt)
+  ## Check whether distribution parameter valid
+  errorMessage <- NULL
+  valid <- eval(parse(text=paste("family$", parameter, ".valid(fv)", sep="")), env=environment())
+  if (is.na(!valid)){
+    errorMessage <- "Fitted values in the inner iteration out of range."
+  } 
   
-  #*C) Calculate sums ----
-  ## stoppping criterion for backfitting
-  # the sums are necessary to calculate deltaf on the server which is needed to determine
-  # the stoppping criterion for backfitting
-  sumofsquares <- sum((s[,lastsmoother] - s.old[,lastsmoother])^2*wt)
-  sumofweights <- sum(wt)
-  # sum over all smoothing fitted values for one observation (& return sum over all observations)
-  sumofsmoothers <- sum(wt*apply(s,1,sum)^2)
   
   #**************************************************************************
   # III) Output ----
   #**************************************************************************
   
-  return(list(sumofsquares=sumofsquares, sumofweights=sumofweights,
-              sumofsmoothers=sumofsmoothers))
+  return(list(dv=dv, errorMessage3=errorMessage))
   
 } 
 # AGGREGATE FUNCTION
-# gamlssDS5
+# gamlssDS6
 

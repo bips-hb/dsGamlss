@@ -1,11 +1,13 @@
 #'
 #' @title gamlssDS4 called by ds.gamlss
 #' @description This is the fourth serverside aggregate function called by ds.gamlss.
-#' @details It is an aggregation function that checks whether the backfitting iteration converged.
+#' @details It is an aggregation function that uses the model structure and starting
+#' parameter vectors constructed by gamlssDS1 to iteratively obtain the PWLSE for gamma.
 #' For more details please see the extensive header of ds.gamlss and also the
 #' gamlss function in native R gamlss package.
 #' @param parameter a string specifing for which of the model parameters "mu", "sigma", "nu"
 #' or "tau" the model fitting should be performed
+#' @param smoother an integer indicating the number of the smoother that should be fitted
 #' @param formula a formula object, with the response on the left of an ~ operator, 
 #' and the terms, separated by + operators, on the right. Nonparametric smoothing
 #' terms are indicated by pb() for penalised beta splines, cs for smoothing splines, 
@@ -77,7 +79,7 @@
 #' @export
 #'
 
-gamlssDS4 <- function(parameter = parameter, formula = formula, 
+gamlssDS4 <- function(parameter = parameter, smoother = smoother, formula = formula, 
                       sigma.formula = sigma.formula, nu.formula = nu.formula, 
                       tau.formula = tau.formula, family = family, data = data, 
                       mu.beta.vect = mu.beta.vect, sigma.beta.vect = sigma.beta.vect,
@@ -167,10 +169,7 @@ gamlssDS4 <- function(parameter = parameter, formula = formula,
   pb.xr <- as.numeric(unlist(strsplit(pb.xr, split=",")))
   
   #**************************************************************************
-  # II) Calculate sums to return to client ----  
-  # the sums can be used to determine the stopping criterion for the 
-  # backfitting on the client side, i.e. the change in the smoothing fitted
-  # values (deltaf)
+  # II) Calculate matrix & vector to return to client ----  
   #**************************************************************************
   
   #*A) Fit the model ----
@@ -178,15 +177,15 @@ gamlssDS4 <- function(parameter = parameter, formula = formula,
   # to increase computational speed the number of inner and backfitting iterations are set to 1
   # suppressWarnings to avoid the warning that the algorithm has not yet converged
   mod.gamlss.ds <- base::suppressWarnings(gamlss::gamlss(formula=formula2use, sigma.formula=sigma.formula2use, 
-                                                         nu.formula=nu.formula2use, tau.formula=tau.formula2use,
-                                                         family=family, data=data, method=RS(), mu.fix=mu.fix, 
-                                                         sigma.fix=sigma.fix, nu.fix=nu.fix, tau.fix=tau.fix,
-                                                         control=gamlss.control(c.crit=c1[1], n.cyc=1, 
-                                                                                mu.step=c1[3], sigma.step=c1[4], 
-                                                                                nu.step=c1[5], tau.step=c1[6],
-                                                                                gd.tol=c1[7], trace=FALSE),
-                                                         i.control=glim.control(cc=c2[1], cyc=1, 
-                                                                                bf.cyc=1, bf.tol=c2[4])))
+                                                        nu.formula=nu.formula2use, tau.formula=tau.formula2use,
+                                                        family=family, data=data, method=RS(), mu.fix=mu.fix, 
+                                                        sigma.fix=sigma.fix, nu.fix=nu.fix, tau.fix=tau.fix,
+                                                        control=gamlss.control(c.crit=c1[1], n.cyc=1, 
+                                                                               mu.step=c1[3], sigma.step=c1[4], 
+                                                                               nu.step=c1[5], tau.step=c1[6],
+                                                                               gd.tol=c1[7], trace=FALSE),
+                                                        i.control=glim.control(cc=c2[1], cyc=1, 
+                                                                               bf.cyc=1, bf.tol=c2[4])))
   
   ## get design matrix for the parameter
   X.mat <- as.matrix(eval(parse(text=paste("mod.gamlss.ds$", parameter, ".x", sep="")), env=environment()))
@@ -210,12 +209,17 @@ gamlssDS4 <- function(parameter = parameter, formula = formula,
   pb.names.parameter <- gsub(pattern=")", replacement="", pb.names.parameter, fixed=TRUE)
   pb.xl.parameter <- pb.xl[which(pb.names %in% pb.names.parameter)]
   pb.xr.parameter <- pb.xr[which(pb.names %in% pb.names.parameter)]
-  # get design matrix for last smoother
-  lastsmoother <- length(pb.names.parameter)
-  if(length(pb.names.parameter[lastsmoother])>0){
-    name <- eval(parse(text=paste("pb.names.parameter[", lastsmoother, "]", sep="")), env=environment())
-    x <- eval(parse(text=name), env=parent.frame())
-    Z.mat.old <- bbase(x=x, xl=pb.xl.parameter[lastsmoother], xr=pb.xr.parameter[lastsmoother])
+  # create design matrices for current & previous smoother if possible
+  if(length(pb.names.parameter[smoother])>0){
+    name <- eval(parse(text=paste("pb.names.parameter[", smoother, "]", sep="")), env=environment())
+    x <-  eval(parse(text=name), env=parent.frame())
+    Z.mat <- bbase(x=x, xl=pb.xl.parameter[smoother], xr=pb.xr.parameter[smoother])
+    # get design matrix for previous smoother if possible
+    if (smoother>1){
+      name <- eval(parse(text=paste("pb.names.parameter[", smoother, "]", sep="")), env=environment())
+      x <-  eval(parse(text=name), env=parent.frame())
+      Z.mat.old <- bbase(x=x, xl=pb.xl.parameter[smoother-1], xr=pb.xr.parameter[smoother-1])
+    }
   }
   
   ## Get fitted values for all distribution parameters
@@ -233,7 +237,7 @@ gamlssDS4 <- function(parameter = parameter, formula = formula,
     tau <- base::get("tau", env=parent.frame())
   }
   
-  ## calculate smoothing fitted value matrix s
+  ## Calculate smoothing fitted value matrix s
   gamma.start <- 1
   coefSmo <- eval(parse(text=paste("mod.gamlss.ds$", parameter, ".coefSmo", sep="")), env=environment())
   s.old <- base::get(paste(parameter, ".s", sep=""), env=parent.frame())
@@ -243,17 +247,19 @@ gamlssDS4 <- function(parameter = parameter, formula = formula,
     gamma.end <- gamma.start+gamma.length-1
     gamma <- gamma.vect[gamma.start:gamma.end]
     # calculate new smoothing fitted values for previous smoother
-    if (i == lastsmoother){
+    if (i == (smoother-1)){
       s.update <- as.vector(Z.mat.old %*% gamma)
     }
     gamma.start <- gamma.end+1
   }
   s <- s.old
   # update smoothing fitted value matrix for previous smoother
-  s[,(lastsmoother)] <- s.update
-  base::assign(paste(parameter, ".s", sep=""), s, env=parent.frame())
+  if (smoother>1){
+    s[,(smoother-1)] <- s.update
+    base::assign(paste(parameter, ".s", sep=""), s, env=parent.frame())
+  }
   
-  #*B) Calculate deviance ----
+  #*B) Update vectors----
   ## Calculate predictor vector eta for the parameter
   eta <- eval(parse(text=paste("family$", parameter, ".linkfun(", parameter, ")", sep="")), env=environment())
   
@@ -307,21 +313,42 @@ gamlssDS4 <- function(parameter = parameter, formula = formula,
   wt <- ifelse(wt>1e+10,1e+10,wt)
   wt <- ifelse(wt<1e-10,1e-10,wt)
   
-  #*C) Calculate sums ----
-  ## stoppping criterion for backfitting
+  ## stopping criterion for backfitting
   # the sums are necessary to calculate deltaf on the server which is needed to determine
   # the stoppping criterion for backfitting
-  sumofsquares <- sum((s[,lastsmoother] - s.old[,lastsmoother])^2*wt)
-  sumofweights <- sum(wt)
-  # sum over all smoothing fitted values for one observation (& return sum over all observations)
-  sumofsmoothers <- sum(wt*apply(s,1,sum)^2)
+  if (smoother==1){
+    sumofsquares <- 0
+    sumofweights <- 1
+  } else {
+    sumofsquares <- sum((s[,(smoother-1)] - s.old[,(smoother-1)])^2*wt)
+    sumofweights <- sum(wt)
+  }
+  
+  ## Update working variable vector wv
+  wv <- eta+dldp/(dr*wt)
+  if (family$type=="Mixed"){
+    wv <-ifelse(is.nan(wv),0,wv)
+  }
+  
+  #*C) Calculate matrix & vectors ----
+  
+  ## Calculate partial residuals
+  partial.residuals <- wv - X.mat %*% beta.vect - base::rowSums(as.matrix(s[,-smoother]))
+  
+  ## Calculate matrix and vector to return to the client
+  vector <- t(Z.mat) %*% (wt*partial.residuals)
+  matrix <- t(Z.mat) %*% diag(wt) %*% Z.mat
+  # remove the dimnames attributes
+  attr(vector, "dimnames") <- NULL
+  attr(matrix, "dimnames") <- NULL
+  
   
   #**************************************************************************
   # III) Output ----
   #**************************************************************************
   
-  return(list(sumofsquares=sumofsquares, sumofweights=sumofweights,
-              sumofsmoothers=sumofsmoothers))
+  return(list(matrix=matrix, vector=vector, sumofsquares=sumofsquares,
+              sumofweights=sumofweights))
   
 } 
 # AGGREGATE FUNCTION
