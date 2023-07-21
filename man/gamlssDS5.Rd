@@ -123,9 +123,8 @@ the client-side.
 This is the fifth serverside aggregate function called by ds.gamlss.
 }
 \details{
-It is an aggregation function that updates the distribution parameters and returns
-the current deviance. The deviance can then be used on the client side to check whether the
-innter iteration converged. For more details please see the extensive header of ds.gamlss and also the
+It is an aggregation function that checks whether the backfitting iteration converged.
+For more details please see the extensive header of ds.gamlss and also the
 gamlss function in native R gamlss package.
 }
 \author{

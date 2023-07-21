@@ -16,12 +16,6 @@ gamlssDS2(
   sigma.beta.vect = sigma.beta.vect,
   nu.beta.vect = nu.beta.vect,
   tau.beta.vect = tau.beta.vect,
-  mu.gamma.vect = mu.gamma.vect,
-  sigma.gamma.vect = sigma.gamma.vect,
-  nu.gamma.vect = nu.gamma.vect,
-  tau.gamma.vect = tau.gamma.vect,
-  pb.xl = pb.xl,
-  pb.xr = pb.xr,
   control = control,
   i.control = i.control
 )
@@ -65,24 +59,6 @@ vector of regression coefficients for nu at the current iteration.}
 
 \item{tau.beta.vect}{a numeric vector created by the clientside function specifying the
 vector of regression coefficients for tau at the current iteration.}
-
-\item{mu.gamma.vect}{a numeric vector created by the clientside function specifying the
-vector of smoothing regression coefficients for mu at the current iteration.}
-
-\item{sigma.gamma.vect}{a numeric vector created by the clientside function specifying the
-vector of smoothing regression coefficients for sigma at the current iteration.}
-
-\item{nu.gamma.vect}{a numeric vector created by the clientside function specifying the
-vector of smoothing regression coefficients for nu at the current iteration.}
-
-\item{tau.gamma.vect}{a numeric vector created by the clientside function specifying the
-vector of smoothing regression coefficients for tau at the current iteration.}
-
-\item{pb.xl}{a numeric vector created by the clientside function specifying the left
-boundary for the knots for the pb-smoother.}
-
-\item{pb.xr}{a numeric vector created by the clientside function specifying the right
-boundary for the knots for the pb-smoother.}
 
 \item{control}{this sets the control parameters of the outer iterations algorithm 
 using the gamlss.control function. This is a vector of 7 numeric values: (i) c.crit 
