@@ -218,6 +218,9 @@ gamlssDS4 <- function(parameter = parameter, smoother = smoother, formula = form
       basismatrix <- bbase(x=x, xl=pb.xl.parameter[i], xr=pb.xr.parameter[i])
       base::assign(paste("Z", i, ".mat", sep=""), basismatrix, env=environment())
       Z.mat <- cbind(Z.mat, basismatrix)
+      if (i==smoother){
+        nobs <- nrow(basismatrix)
+      }
     }
   }
   
@@ -320,7 +323,7 @@ gamlssDS4 <- function(parameter = parameter, smoother = smoother, formula = form
   # III) Output ----
   #**************************************************************************
   
-  return(list(global.matrix=global.matrix, inner.product=inner.product))
+  return(list(nobs=nobs, global.matrix=global.matrix, inner.product=inner.product))
   
 } 
 # AGGREGATE FUNCTION
