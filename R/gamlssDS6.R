@@ -273,34 +273,46 @@ gamlssDS6 <- function(parameter = parameter, formula = formula,
   
   ## Weighting of the estimates
   # weight the new smoothing fitted value matrix and fitted eta with the old fitted values to avoid overjumping
-  if (autostep){
-    # automatic halving of the step size (method 2 as described in Stasinopolous et al. 2020, p.66f)
-    eta <- (eta.old*(2**autostep.count - 1) - eta)/(2**(2+autostep.count-1)-2**autostep.count)
+  
+  # fixed step size (method 1 as described in Stasinopolous et al. 2020, p.66)
+  if (inner.iteration.count>1 & (autostep==FALSE | autostep.count==1)){
+    # no weighting for the first inner iteration (old estimates not reasonable)
+    step <- eval(parse(text=paste(parameter, ".step", sep="")), env=environment())
+    eta <- step*eta+(1-step)*eta.old
     if (!is.null(coefSmo)){
-      s <- (s.old*(2**autostep.count - 1) - s)/(2**(2+autostep.count-1)-2**autostep.count)
+      s <- step*s+(1-step)*s.old
     }
-  } else {
-    # fixed step size (method 1 as described in Stasinopolous et al. 2020, p.66)
-    if (inner.iteration.count>1){ 
-      # no weighting for the first inner iteration (old estimates not reasonable)
-      step <- eval(parse(text=paste(parameter, ".step", sep="")), env=environment())
-      eta <- step*eta+(1-step)*eta.old
+  }
+  
+  # automatic halving of the step size (method 2 as described in Stasinopolous et al. 2020, p.66f)
+  if (autostep==TRUE & autostep.count>0){
+    # different calculation to avoid saving of the original lpold 
+    # (does not work for 1st autostep iteration - division by zero)
+    if (autostep.count==1){
+      eta <- (eta.old + eta)/2
       if (!is.null(coefSmo)){
-        s <- step*s+(1-step)*s.old
+        s <- (s.old + s)/2
+      }
+    } else {
+      eta <- (eta.old*(2**autostep.count - 1) - eta)/(2**autostep.count-2)
+      if (!is.null(coefSmo)){
+        s <- (s.old*(2**autostep.count - 1) - s)/(2**autostep.count-2)
       }
     }
-  }
+  } 
   
   ## Save the new estimates
-  # Save the smooting fitted values
-  if(!is.null(coefSmo)){
-    base::assign(paste(parameter, ".s", sep=""), s, env=parent.frame())
-  }
-  
-  # Save the distribution parameter vector
   fv <- eval(parse(text=paste("family$", parameter, ".linkinv(eta)", sep="")), env=environment())
-  base::assign(parameter, fv, env=parent.frame())
   
+  if (autostep==FALSE | autostep.count>0){
+    # Save the smooting fitted values
+    if(!is.null(coefSmo)){
+      base::assign(paste(parameter, ".s", sep=""), s, env=parent.frame())
+    }
+    # Save the distribution parameter vector
+    base::assign(parameter, fv, env=parent.frame())
+  }
+
   ## Calculate deviance
   if (parameter=="mu"){
     formals(dev.function, env=new.env()) <- alist(mu = fv)
