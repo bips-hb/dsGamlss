@@ -305,7 +305,7 @@ gamlssDS6 <- function(parameter = parameter, formula = formula,
   fv <- eval(parse(text=paste("family$", parameter, ".linkinv(eta)", sep="")), env=environment())
   
   if (autostep==FALSE | autostep.count>0){
-    # Save the smooting fitted values
+    # Save the smoothing fitted values
     if(!is.null(coefSmo)){
       base::assign(paste(parameter, ".s", sep=""), s, env=parent.frame())
     }
