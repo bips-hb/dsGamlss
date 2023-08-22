@@ -216,7 +216,7 @@ gamlssDS3 <- function(parameter = parameter, smoother = smoother, formula = form
     Z.mat <- bbase(x=x, xl=pb.xl.parameter[smoother], xr=pb.xr.parameter[smoother])
     # get design matrix for previous smoother if possible
     if (smoother>1){
-      name <- eval(parse(text=paste("pb.names.parameter[", smoother, "]", sep="")), env=environment())
+      name <- eval(parse(text=paste("pb.names.parameter[", smoother-1, "]", sep="")), env=environment())
       x <-  eval(parse(text=name), env=parent.frame())
       Z.mat.old <- bbase(x=x, xl=pb.xl.parameter[smoother-1], xr=pb.xr.parameter[smoother-1])
     }
