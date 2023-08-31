@@ -1,7 +1,7 @@
 #'
 #' @title gamlssDS4 called by ds.gamlss
 #' @description This is the fourth serverside aggregate function called by ds.gamlss.
-#' @details It is an aggregation function that returns the required matrix and inner product
+#' @details It is an aggregation function that returns the required inner product
 #' to estimate the smoothing parameter lambda with the ML method.
 #' For more details please see the extensive header of ds.gamlss and also the
 #' gamlss function in native R gamlss package.
@@ -210,16 +210,15 @@ gamlssDS4 <- function(parameter = parameter, smoother = smoother, formula = form
   pb.xl.parameter <- pb.xl[which(pb.names %in% pb.names.parameter)]
   pb.xr.parameter <- pb.xr[which(pb.names %in% pb.names.parameter)]
   # create design matrices for all smoothers
-  Z.mat <- NULL
   if(length(pb.names.parameter)>0){
     for (i in 1:length(pb.names.parameter)){
       name <- eval(parse(text=paste("pb.names.parameter[", i, "]", sep="")), env=environment())
       x <- eval(parse(text=name), env=parent.frame())
       basismatrix <- bbase(x=x, xl=pb.xl.parameter[i], xr=pb.xr.parameter[i])
       base::assign(paste("Z", i, ".mat", sep=""), basismatrix, env=environment())
-      Z.mat <- cbind(Z.mat, basismatrix)
       if (i==smoother){
         nobs <- nrow(basismatrix)
+        Z.mat <- basismatrix
       }
     }
   }
@@ -243,6 +242,17 @@ gamlssDS4 <- function(parameter = parameter, smoother = smoother, formula = form
   coefSmo <- eval(parse(text=paste("mod.gamlss.ds$", parameter, ".coefSmo", sep="")), env=environment())
   if (!is.null(coefSmo)){
     s <- base::get(paste(parameter, ".s", sep=""), env=parent.frame())
+  }
+  
+  ## Get gamma vector
+  gamma.start <- 1
+  for (i in 1:length(coefSmo)){
+    gamma.length <- dim(coefSmo[[i]]$coef)[1]
+    gamma.end <- gamma.start+gamma.length-1
+    if (i==smoother){
+      gamma <- gamma.vect[gamma.start:gamma.end]
+    }
+    gamma.start <- gamma.end+1
   }
   
   #*B) Update vectors----
@@ -308,10 +318,9 @@ gamlssDS4 <- function(parameter = parameter, smoother = smoother, formula = form
   #*C) Calculate matrix & vectors ----
   ## Calculate partial residuals
   partial.residuals <- wv - X.mat %*% beta.vect - base::rowSums(as.matrix(s[,-smoother]))
-  fitted.partial.residuals <- Z.mat %*% gamma.vect
+  fitted.partial.residuals <- Z.mat %*% gamma
   
-  ## Calculate matrix and inner product to return to the client
-  global.matrix <- t(Z.mat) %*% diag(wt) %*% Z.mat
+  ## Calculate inner product to return to the client
   inner.product <- sum(wt*(partial.residuals - fitted.partial.residuals)^2)
 
   # remove the dimnames attributes
@@ -323,7 +332,7 @@ gamlssDS4 <- function(parameter = parameter, smoother = smoother, formula = form
   # III) Output ----
   #**************************************************************************
   
-  return(list(nobs=nobs, global.matrix=global.matrix, inner.product=inner.product))
+  return(list(nobs=nobs, inner.product=inner.product))
   
 } 
 # AGGREGATE FUNCTION
