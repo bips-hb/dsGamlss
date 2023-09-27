@@ -138,8 +138,6 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
                                                          i.control = glim.control(cc=c2[1], cyc=1, 
                                                                                   bf.cyc=1, bf.tol=c2[4])))
   
-  parameters <- mod.gamlss.ds$parameters
-  
   mu.x <- mod.gamlss.ds$mu.x
   sigma.x <- mod.gamlss.ds$sigma.x
   nu.x <- mod.gamlss.ds$nu.x
@@ -156,6 +154,50 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   tau.coef.names <- names(mod.gamlss.ds$tau.coefficients)
   
   y <- as.vector(mod.gamlss.ds$y)
+  
+  ## Block individual level information
+  mod.gamlss.ds$y <- "The response variable is not disclosed!"
+  mod.gamlss.ds$residuals <- "The residuals of the model are not disclosed!"
+  if("mu" %in% names(family$parameters)){
+    mod.gamlss.ds$mu.fv <- "The fitted values of the mu model are not disclosed!"
+    mod.gamlss.ds$mu.lp <- "The linear predictors of the mu model are not disclosed!"
+    mod.gamlss.ds$mu.wv <- "The working variable of the mu model are not disclosed!"
+    mod.gamlss.ds$mu.wt <- "The working weights of the mu model are not disclosed!"
+    mod.gamlss.ds$mu.x <- "The design matrix of the mu model is not disclosed!"
+    mod.gamlss.ds$mu.qr <- "The QR decomposition of the mu model is not disclosed!"
+    mod.gamlss.ds$mu.s <- "The smoothing fitted values of the mu model are not disclosed!"
+    mod.gamlss.ds$mu.var <- "The variances for the smoothing fitted values of the mu model are not disclosed!"
+  }
+  if("sigma" %in% names(family$parameters)){
+    mod.gamlss.ds$sigma.fv <- "The fitted values of the sigma model are not disclosed!"
+    mod.gamlss.ds$sigma.lp <- "The linear predictors of the sigma model are not disclosed!"
+    mod.gamlss.ds$sigma.wv <- "The working variable of the sigma model are not disclosed!"
+    mod.gamlss.ds$sigma.wt <- "The working weights of the sigma model are not disclosed!"
+    mod.gamlss.ds$sigma.x <- "The design matrix of the sigma model is not disclosed!"
+    mod.gamlss.ds$sigma.qr <- "The QR decomposition of the sigma model is not disclosed!"
+    mod.gamlss.ds$sigma.s <- "The smoothing fitted values of the sigma model are not disclosed!"
+    mod.gamlss.ds$sigma.var <- "The variances for the smoothing fitted values of the sigma model are not disclosed!"
+  }
+  if("nu" %in% names(family$parameters)){
+    mod.gamlss.ds$nu.fv <- "The fitted values of the nu model are not disclosed!"
+    mod.gamlss.ds$nu.lp <- "The linear predictors of the nu model are not disclosed!"
+    mod.gamlss.ds$nu.wv <- "The working variable of the nu model are not disclosed!"
+    mod.gamlss.ds$nu.wt <- "The working weights of the nu model are not disclosed!"
+    mod.gamlss.ds$nu.x <- "The design matrix of the nu model is not disclosed!"
+    mod.gamlss.ds$nu.qr <- "The QR decomposition of the nu model is not disclosed!"
+    mod.gamlss.ds$nu.s <- "The smoothing fitted values of the nu model are not disclosed!"
+    mod.gamlss.ds$nu.var <- "The variances for the smoothing fitted values of the nu model are not disclosed!"
+  }
+  if("tau" %in% names(family$parameters)){
+    mod.gamlss.ds$tau.fv <- "The fitted values of the tau model are not disclosed!"
+    mod.gamlss.ds$tau.lp <- "The linear predictors of the tau model are not disclosed!"
+    mod.gamlss.ds$tau.wv <- "The working variable of the tau model are not disclosed!"
+    mod.gamlss.ds$tau.wt <- "The working weights of the tau model are not disclosed!"
+    mod.gamlss.ds$tau.x <- "The design matrix of the tau model is not disclosed!"
+    mod.gamlss.ds$tau.qr <- "The QR decomposition of the tau model is not disclosed!"
+    mod.gamlss.ds$tau.s <- "The smoothing fitted values of the tau model are not disclosed!"
+    mod.gamlss.ds$tau.var <- "The variances for the smoothing fitted values of the tau model are not disclosed!"
+  }
 
   ## Smoothers
   smoother.names <- c(mu.coef.names, sigma.coef.names, nu.coef.names, tau.coef.names)
@@ -187,39 +229,6 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   }else{  # the model does not include pb-smoothers
     pb.xmin <- NULL
     pb.xmax <- NULL
-  }
-
-  # get the length of the gamma vectors
-  # mu
-  mu.gamma.length <- NULL
-  if (!is.null(mod.gamlss.ds$mu.coefSmo)){
-    for (s in 1:length(mod.gamlss.ds$mu.coefSmo)){
-      mu.gamma.length <- c(mu.gamma.length, dim(mod.gamlss.ds$mu.coefSmo[[s]]$coef)[1])
-    }
-  }
-  
-  # sigma
-  sigma.gamma.length <- NULL
-  if (!is.null(mod.gamlss.ds$sigma.coefSmo)){
-    for (s in 1:length(mod.gamlss.ds$sigma.coefSmo)){
-      sigma.gamma.length <- c(sigma.gamma.length, dim(mod.gamlss.ds$sigma.coefSmo[[s]]$coef)[1])
-    }
-  }
-  
-  # nu
-  nu.gamma.length <- NULL
-  if (!is.null(mod.gamlss.ds$nu.coefSmo)){
-    for (s in 1:length(mod.gamlss.ds$nu.coefSmo)){
-      nu.gamma.length <- c(nu.gamma.length, dim(mod.gamlss.ds$nu.coefSmo[[s]]$coef)[1])
-    }
-  }
-  
-  # tau
-  tau.gamma.length <- NULL
-  if (!is.null(mod.gamlss.ds$tau.coefSmo)){
-    for (s in 1:length(mod.gamlss.ds$tau.coefSmo)){
-      tau.gamma.length <- c(tau.gamma.length, dim(mod.gamlss.ds$tau.coefSmo[[s]]$coef)[1])
-    }
   }
   
   #**************************************************************************
@@ -427,12 +436,9 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   #**************************************************************************
   # V) Output ----
   #**************************************************************************
-  return(list(G.dev=G.dev, parameters=parameters,
+  return(list(mod.gamlss.ds=mod.gamlss.ds, G.dev=G.dev,
               dim.mu.x=dim.mu.x, dim.sigma.x=dim.sigma.x, dim.nu.x=dim.nu.x, dim.tau.x=dim.tau.x,
-              mu.coef.names=mu.coef.names, sigma.coef.names=sigma.coef.names, nu.coef.names=nu.coef.names, tau.coef.names=tau.coef.names,
               pb.names=pb.names, pb.xmin=pb.xmin, pb.xmax=pb.xmax,
-              mu.gamma.length=mu.gamma.length, sigma.gamma.length=sigma.gamma.length,
-              nu.gamma.length=nu.gamma.length, tau.gamma.length=tau.gamma.length,
               y.invalid=y.invalid, mu.par.invalid=mu.par.invalid, sigma.par.invalid=sigma.par.invalid,
               nu.par.invalid=nu.par.invalid, tau.par.invalid=tau.par.invalid,
               gamlss.saturation.invalid=gamlss.saturation.invalid, errorMessage=errorMessage))
