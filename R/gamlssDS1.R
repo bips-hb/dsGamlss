@@ -167,6 +167,11 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     mod.gamlss.ds$mu.qr <- "The QR decomposition of the mu model is not disclosed!"
     mod.gamlss.ds$mu.s <- "The smoothing fitted values of the mu model are not disclosed!"
     mod.gamlss.ds$mu.var <- "The variances for the smoothing fitted values of the mu model are not disclosed!"
+    if(length(mod.gamlss.ds$mu.coefSmo)>0){
+      for(i in 1:length(mod.gamlss.ds$mu.coefSmo)){
+        mod.gamlss.ds$mu.coefSmo[[i]]$fv <- "The smoothing fitted values of the mu model are not disclosed!"
+      }
+    }
   }
   if("sigma" %in% names(family$parameters)){
     mod.gamlss.ds$sigma.fv <- "The fitted values of the sigma model are not disclosed!"
@@ -177,6 +182,11 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     mod.gamlss.ds$sigma.qr <- "The QR decomposition of the sigma model is not disclosed!"
     mod.gamlss.ds$sigma.s <- "The smoothing fitted values of the sigma model are not disclosed!"
     mod.gamlss.ds$sigma.var <- "The variances for the smoothing fitted values of the sigma model are not disclosed!"
+    if(length(mod.gamlss.ds$sigma.coefSmo)>0){
+      for(i in 1:length(mod.gamlss.ds$sigma.coefSmo)){
+        mod.gamlss.ds$sigma.coefSmo[[i]]$fv <- "The smoothing fitted values of the sigma model are not disclosed!"
+      }
+    }
   }
   if("nu" %in% names(family$parameters)){
     mod.gamlss.ds$nu.fv <- "The fitted values of the nu model are not disclosed!"
@@ -187,6 +197,11 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     mod.gamlss.ds$nu.qr <- "The QR decomposition of the nu model is not disclosed!"
     mod.gamlss.ds$nu.s <- "The smoothing fitted values of the nu model are not disclosed!"
     mod.gamlss.ds$nu.var <- "The variances for the smoothing fitted values of the nu model are not disclosed!"
+    if(length(mod.gamlss.ds$nu.coefSmo)>0){
+      for(i in 1:length(mod.gamlss.ds$nu.coefSmo)){
+        mod.gamlss.ds$nu.coefSmo[[i]]$fv <- "The smoothing fitted values of the nu model are not disclosed!"
+      }
+    }
   }
   if("tau" %in% names(family$parameters)){
     mod.gamlss.ds$tau.fv <- "The fitted values of the tau model are not disclosed!"
@@ -197,6 +212,11 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     mod.gamlss.ds$tau.qr <- "The QR decomposition of the tau model is not disclosed!"
     mod.gamlss.ds$tau.s <- "The smoothing fitted values of the tau model are not disclosed!"
     mod.gamlss.ds$tau.var <- "The variances for the smoothing fitted values of the tau model are not disclosed!"
+    if(length(mod.gamlss.ds$tau.coefSmo)>0){
+      for(i in 1:length(mod.gamlss.ds$tau.coefSmo)){
+        mod.gamlss.ds$tau.coefSmo[[i]]$fv <- "The smoothing fitted values of the tau model are not disclosed!"
+      }
+    }
   }
 
   ## Smoothers
