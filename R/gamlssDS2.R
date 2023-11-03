@@ -78,7 +78,6 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   #**************************************************************************
   # I) Preparation ---- 
   # Reconvert the transfer strings into required variable types
-  # Extract the varnames
   # Get function to calculate deviance increment
   #**************************************************************************
   
@@ -150,70 +149,9 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   tau.beta.vect <- as.numeric(unlist(strsplit(tau.beta.vect, split=",")))
   # get the beta and gammma vectors for the respective parameter
   beta.vect <- eval(parse(text=paste(parameter, ".beta.vect", sep="")), env=environment())
- 
-  ## Get the variable names
-  # Rewrite formulas extracting variables nested in structures like data frame or list
-  # (e.g. D$A~D$B will be re-written A~B)
-  # Note final product is a list of the variables in the model (yvector and covariates)
-  # it is NOT a list of model terms - these are derived later
-  
-  # Convert formula strings into separate variable names split by |
-  formulas <- paste(formulatext, sigma.formulatext, nu.formulatext, tau.formulatext, sep="|")
-  formulas <- gsub("pb(", "", formulas, fixed=TRUE) 
-  formulas <- gsub(")", "", formulas, fixed=TRUE) 
-  formulas <- gsub(" ", "", formulas, fixed=TRUE)
-  formulas <- gsub("~", "|", formulas, fixed=TRUE)
-  formulas <- gsub("+", "|", formulas, fixed=TRUE)
-  formulas <- gsub("*", "|", formulas, fixed=TRUE)
-  formulas <- gsub(":", "|", formulas, fixed=TRUE)
-  formulas <- gsub("||", "|", formulas, fixed=TRUE)
-  
-  # Remember model.variables and then varnames include both yvect and linear predictor components 
-  model.variables <- unlist(strsplit(formulas, split="|", fixed=TRUE))
-  
-  varnames <- c()
-  for(i in 1:length(model.variables)){
-    elt <- unlist(strsplit(model.variables[i], split="$", fixed=TRUE))
-    if(length(elt) > 1){
-      assign(elt[length(elt)], eval(parse(text=model.variables[i]), env=parent.frame()), env=parent.frame())
-      varnames <- append(varnames, elt[length(elt)])
-    }else{
-      varnames <- append(varnames, elt)
-    }
-  }
-  varnames <- unique(varnames)
-  
-  if(!is.null(dataname)){
-    for(v in 1:length(varnames)){
-      varnames[v] <- paste0(dataname,"$",varnames[v])
-      test.string.0 <- paste0(dataname,"$","0")
-      test.string.1 <- paste0(dataname,"$","1")
-      if(varnames[v]==test.string.0) varnames[v] <- "0"
-      if(varnames[v]==test.string.1) varnames[v] <- "1"
-    }
-    cbindraw.text <- paste0("cbind(", paste(varnames, collapse=","), ")")
-  }else{
-    cbindraw.text <- paste0("cbind(", paste(varnames, collapse=","), ")")
-  }
   
   #**************************************************************************
-  # II) Identify missings----  
-  #**************************************************************************
-  
-  # Identify and use variable names to count missings
-  all.data <- eval(parse(text=cbindraw.text), env=parent.frame())
-  
-  Ntotal <- dim(all.data)[1]
-  
-  nomiss.any <- stats::complete.cases(all.data)
-  nomiss.any.data <- all.data[nomiss.any,]
-  N.nomiss.any <- dim(nomiss.any.data)[1]
-  
-  Nvalid <- N.nomiss.any
-  Nmissing <- Ntotal-Nvalid
-  
-  #**************************************************************************
-  # III) Calculate matrix & vector to return to client ----  
+  # II) Calculate matrix & vector to return to client ----  
   #**************************************************************************
   
   #*A) Fit the model ----
@@ -255,7 +193,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   if (!is.null(coefSmo)){
     s <- base::get(paste(parameter, ".s", sep=""), env=parent.frame())
   } else{
-    s <- rep(0, times=Ntotal)
+    s <- rep(0, times=mod.gamlss.ds$N)
   }
   s <- as.matrix(s)
   
@@ -344,7 +282,7 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   
   
   #**************************************************************************
-  # IV) Backup disclosure risk----
+  # III) Backup disclosure risk----
   # If y, X or w data are invalid but user has modified clientside
   # function (ds.gamlss) to circumvent trap, model will get to this point without
   # giving a controlled shut down with a warning about invalid data.

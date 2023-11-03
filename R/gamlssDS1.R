@@ -152,10 +152,11 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   sigma.coef.names <- names(mod.gamlss.ds$sigma.coefficients)
   nu.coef.names <- names(mod.gamlss.ds$nu.coefficients)
   tau.coef.names <- names(mod.gamlss.ds$tau.coefficients)
+  smoother.names <- NULL
   
   y <- as.vector(mod.gamlss.ds$y)
   
-  ## Block individual level information
+  ## Block individual level information & get variables for the smoothers
   mod.gamlss.ds$y <- "The response variable is not disclosed!"
   mod.gamlss.ds$residuals <- "The residuals of the model are not disclosed!"
   if("mu" %in% names(family$parameters)){
@@ -170,6 +171,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     if(length(mod.gamlss.ds$mu.coefSmo)>0){
       for(i in 1:length(mod.gamlss.ds$mu.coefSmo)){
         mod.gamlss.ds$mu.coefSmo[[i]]$fv <- "The smoothing fitted values of the mu model are not disclosed!"
+        smoother.names <- c(smoother.names, mod.gamlss.ds$mu.coefSmo[[i]]$name)
       }
     }
   }
@@ -185,6 +187,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     if(length(mod.gamlss.ds$sigma.coefSmo)>0){
       for(i in 1:length(mod.gamlss.ds$sigma.coefSmo)){
         mod.gamlss.ds$sigma.coefSmo[[i]]$fv <- "The smoothing fitted values of the sigma model are not disclosed!"
+        smoother.names <- c(smoother.names, mod.gamlss.ds$sigma.coefSmo[[i]]$name)
       }
     }
   }
@@ -200,6 +203,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     if(length(mod.gamlss.ds$nu.coefSmo)>0){
       for(i in 1:length(mod.gamlss.ds$nu.coefSmo)){
         mod.gamlss.ds$nu.coefSmo[[i]]$fv <- "The smoothing fitted values of the nu model are not disclosed!"
+        smoother.names <- c(smoother.names, mod.gamlss.ds$nu.coefSmo[[i]]$name)
       }
     }
   }
@@ -215,40 +219,38 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     if(length(mod.gamlss.ds$tau.coefSmo)>0){
       for(i in 1:length(mod.gamlss.ds$tau.coefSmo)){
         mod.gamlss.ds$tau.coefSmo[[i]]$fv <- "The smoothing fitted values of the tau model are not disclosed!"
+        smoother.names <- c(smoother.names, mod.gamlss.ds$tau.coefSmo[[i]]$name)
       }
     }
   }
-
-  ## Smoothers
-  smoother.names <- c(mu.coef.names, sigma.coef.names, nu.coef.names, tau.coef.names)
-  pb.names <- smoother.names[grep(pattern="pb(", x=smoother.names, fixed=TRUE)]
-  pb.names <- unique(pb.names)
-  pb.names <- gsub(pattern="pb(", replacement="", pb.names, fixed=TRUE)
-  pb.names <- gsub(pattern=")", replacement="", pb.names, fixed=TRUE)
   
-  # Get the anonymized minimum and maximum for each variable in pb.names (similar to scatterPlotDS)
+  # If a smoothing variable occurs several times for different distribution parameters it should only
+  # occur ones in the smoother.names and minimum and maximum
+  smoother.names <- unique(smoother.names)
+  
+  # Get the anonymized minimum and maximum for each variable in smoother.names (similar to scatterPlotDS)
   # The minimum and maximum are needed to use same knots on all servers during the fitting of the 
   # smoothing terms
   # Note that for simplicity at the moment only probabilistic anonymization is implemented
-  if(length(pb.names)>0){  # the mode includes pb-smoothers
-    pb.xmin <- rep(NA, length(pb.names))
-    pb.xmax <- rep(NA, length(pb.names))
-    for (i in 1:length(pb.names)){
-      x <- eval(parse(text=pb.names[i]), env=parent.frame())
+  if(length(smoother.names)>0){  # the mode includes smoothers
+    smoother.xmin <- rep(NA, length(smoother.names))
+    smoother.xmax <- rep(NA, length(smoother.names))
+    for (i in 1:length(smoother.names)){
+      x <- eval(parse(text=smoother.names[i]), env=parent.frame())
       # the study-specific seed for random number generation
       seed <- getOption("datashield.seed")
       if (is.null(seed)){
-        stop("gamlssDS1 with pb-smoothers requires 'datashield.seed' R option to operate", call.=FALSE)
+        stop("gamlssDS1 with smoothers requires 'datashield.seed' R option to operate", call.=FALSE)
       }else{
         set.seed(seed)
         x.new <- x + stats::rnorm(n=length(x), mean=0, sd=sqrt(nfilter.noise*stats::var(x)))
-        pb.xmin[i] <- min(x.new)
-        pb.xmax[i] <- max(x.new)
+        smoother.xmin[i] <- min(x.new)
+        smoother.xmax[i] <- max(x.new)
       }
     }
-  }else{  # the model does not include pb-smoothers
-    pb.xmin <- NULL
-    pb.xmax <- NULL
+  }else{  # the model does not include smoothers
+    smoother.xmin <- NULL
+    smoother.xmax <- NULL
   }
   
   #**************************************************************************
@@ -458,7 +460,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   #**************************************************************************
   return(list(mod.gamlss.ds=mod.gamlss.ds, G.dev=G.dev,
               dim.mu.x=dim.mu.x, dim.sigma.x=dim.sigma.x, dim.nu.x=dim.nu.x, dim.tau.x=dim.tau.x,
-              pb.names=pb.names, pb.xmin=pb.xmin, pb.xmax=pb.xmax,
+              smoother.names=smoother.names, smoother.xmin=smoother.xmin, smoother.xmax=smoother.xmax,
               y.invalid=y.invalid, mu.par.invalid=mu.par.invalid, sigma.par.invalid=sigma.par.invalid,
               nu.par.invalid=nu.par.invalid, tau.par.invalid=tau.par.invalid,
               gamlss.saturation.invalid=gamlss.saturation.invalid, errorMessage=errorMessage))

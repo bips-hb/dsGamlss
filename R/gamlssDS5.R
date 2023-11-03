@@ -48,9 +48,10 @@
 #' vector of smoothing regression coefficients for nu at the current iteration.
 #' @param tau.gamma.vect a numeric vector created by the clientside function specifying the
 #' vector of smoothing regression coefficients for tau at the current iteration.
-#' @param pb.xl a numeric vector created by the clientside function specifying the left
+#' @param smoother.names a character vector specifying the unique variable names for the smoother.
+#' @param smoother.xl a numeric vector created by the clientside function specifying the left
 #' boundary for the knots for the pb-smoother.
-#' @param pb.xr a numeric vector created by the clientside function specifying the right
+#' @param smoother.xr a numeric vector created by the clientside function specifying the right
 #' boundary for the knots for the pb-smoother.
 #' @param control this sets the control parameters of the outer iterations algorithm 
 #' using the gamlss.control function. This is a vector of 7 numeric values: (i) c.crit 
@@ -84,7 +85,8 @@ gamlssDS5 <- function(parameter = parameter, formula = formula,
                       nu.beta.vect = nu.beta.vect, tau.beta.vect = tau.beta.vect,
                       mu.gamma.vect = mu.gamma.vect, sigma.gamma.vect = sigma.gamma.vect,
                       nu.gamma.vect = nu.gamma.vect, tau.gamma.vect = tau.gamma.vect,
-                      pb.xl = pb.xl, pb.xr = pb.xr,
+                      smoother.names = smoother.names,
+                      smoother.xl = smoother.xl, smoother.xr = smoother.xr,
                       control = control, i.control = i.control){
   
   #**************************************************************************
@@ -163,8 +165,8 @@ gamlssDS5 <- function(parameter = parameter, formula = formula,
   gamma.vect <- eval(parse(text=paste(parameter, ".gamma.vect", sep="")), env=environment())
   
   # Convert knot boundaries from transmittable (character) format to numeric
-  pb.xl <- as.numeric(unlist(strsplit(pb.xl, split=",")))
-  pb.xr <- as.numeric(unlist(strsplit(pb.xr, split=",")))
+  smoother.xl <- as.numeric(unlist(strsplit(smoother.xl, split=",")))
+  smoother.xr <- as.numeric(unlist(strsplit(smoother.xr, split=",")))
   
   #**************************************************************************
   # II) Calculate sums to return to client ----  
@@ -193,30 +195,26 @@ gamlssDS5 <- function(parameter = parameter, formula = formula,
   y <- as.vector(mod.gamlss.ds$y)
   
   ## get design matrix for the smoothers
-  # identify the variables for pb-smoothers (for all parameters)
-  mu.coef.names <- names(mod.gamlss.ds$mu.coefficients)
-  sigma.coef.names <- names(mod.gamlss.ds$sigma.coefficients)
-  nu.coef.names <- names(mod.gamlss.ds$nu.coefficients)
-  tau.coef.names <- names(mod.gamlss.ds$tau.coefficients)
-  smoother.names <- c(mu.coef.names, sigma.coef.names, nu.coef.names, tau.coef.names)
-  pb.names <- smoother.names[grep(pattern="pb(", x=smoother.names, fixed=TRUE)]
-  pb.names <- unique(pb.names)
-  pb.names <- gsub(pattern="pb(", replacement="", pb.names, fixed=TRUE)
-  pb.names <- gsub(pattern=")", replacement="", pb.names, fixed=TRUE)
-  # only extract the variables that are relevant for the current parameter
-  coef.names <- eval(parse(text=paste(parameter, ".coef.names", sep="")), env=environment())
-  pb.names.parameter <- coef.names[grep(pattern="pb(", x=coef.names, fixed=TRUE)]
-  pb.names.parameter <- gsub(pattern="pb(", replacement="", pb.names.parameter, fixed=TRUE)
-  pb.names.parameter <- gsub(pattern=")", replacement="", pb.names.parameter, fixed=TRUE)
-  pb.xl.parameter <- pb.xl[which(pb.names %in% pb.names.parameter)]
-  pb.xr.parameter <- pb.xr[which(pb.names %in% pb.names.parameter)]
-  # get design matrix for last smoother
-  lastsmoother <- length(pb.names.parameter)
-  if(length(pb.names.parameter[lastsmoother])>0){
-    name <- eval(parse(text=paste("pb.names.parameter[", lastsmoother, "]", sep="")), env=environment())
-    x <- eval(parse(text=name), env=parent.frame())
-    Z.mat.old <- bbase(x=x, xl=pb.xl.parameter[lastsmoother], xr=pb.xr.parameter[lastsmoother])
+  # get the control parameters for the smoothers
+  coefficients <- eval(parse(text=paste("names(mod.gamlss.ds$", parameter, ".coefficients)", sep="")), env=environment())
+  smoother.coef <- coefficients[grep(pattern="pb(", x=tolower(coefficients), fixed=TRUE)]
+  # only keep the arguments for the pb() function
+  pb.args <- substr(smoother.coef, start=4, stop=nchar(smoother.coef)-1)
+  pb.args <- strsplit(pb.args, split=",", fixed=TRUE)
+  
+  # create design matrices for last smoother
+  lastsmoother <- length(eval(parse(text=paste("mod.gamlss.ds$", parameter, ".coefSmo", sep="")), env=environment()))
+  name <- eval(parse(text=paste("mod.gamlss.ds$", parameter, ".coefSmo[[", lastsmoother, "]]$name", sep="")), env=environment())
+  if (length(grep(pattern="pb.control", x=pb.args[[lastsmoother]], fixed=TRUE))>0) {
+    # control parameters specified
+    pb.control <- eval(parse(text=pb.args[[lastsmoother]][grep(pattern="pb.control", x=pb.args[[lastsmoother]], fixed=TRUE)]))
+  } else {
+    # no control parameters specified - use default
+    pb.control <- eval(parse(text="pb.control()"))
   }
+  x <- eval(parse(text=name), env=parent.frame())
+  Z.mat.old <- bbase(x=x, xl=smoother.xl[which(smoother.names==name)], xr=smoother.xr[which(smoother.names==name)],
+                     ndx=pb.control$inter, deg=pb.control$degree)
   
   ## Get fitted values for all distribution parameters
   # necessary for all parameters to calculate deviance
