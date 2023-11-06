@@ -313,21 +313,62 @@ gamlssDS6 <- function(parameter = parameter, formula = formula,
     base::assign(parameter, fv, env=parent.frame())
   }
 
-  ## Calculate deviance
+  ## Calculate derivatives & deviance
+  dr <- eval(parse(text=paste("family$", parameter, ".dr(eta)", sep="")), env=environment())  # dparameter/ deta
+  dr <- 1/dr  # deta/ dparameter = 1/ (dparameter/ deta)
+  
   if (parameter=="mu"){
     formals(dev.function, env=new.env()) <- alist(mu = fv)
+    # first derivative of log-likelihood
+    dldp.function <- family$dldm
+    formals(dldp.function, env=new.env()) <- alist(mu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    # second derivative of log-likelihood
+    d2ldp2.function <- family$d2ldm2
+    formals(d2ldp2.function, env=new.env()) <- alist(mu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
   }
   if (parameter=="sigma"){
     formals(dev.function, env=new.env()) <- alist(sigma = fv)
+    # first derivative of log-likelihood
+    dldp.function <- family$dldd
+    formals(dldp.function, env=new.env()) <- alist(sigma = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    # second derivative of log-likelihood
+    d2ldp2.function <- family$d2ldd2
+    formals(d2ldp2.function, env=new.env()) <- alist(sigma = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
   }
   if (parameter=="nu"){
     formals(dev.function, env=new.env()) <- alist(nu = fv)
+    # first derivative of log-likelihood
+    dldp.function <- family$dldv
+    formals(dldp.function, env=new.env()) <- alist(nu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    # second derivative of log-likelihood
+    d2ldp2.function <- family$d2ldv2
+    formals(d2ldp2.function, env=new.env()) <- alist(nu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
   }
   if (parameter=="tau"){
     formals(dev.function, env=new.env()) <- alist(tau = fv)
+    # first derivative of log-likelihood
+    dldp.function <- family$dldt
+    formals(dldp.function, env=new.env()) <- alist(tau = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    # second derivative of log-likelihood
+    d2ldp2.function <- family$d2ldt2
+    formals(d2ldp2.function, env=new.env()) <- alist(tau = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
   }
   di <- dev.function(fv)  # deviance increment
   dv <- sum(di)  # the global deviance on the server
+  dldp <- dldp.function(fv)  # first derivative of log-likelihood with respect to parameter
+  d2ldp2 <- d2ldp2.function(fv)  # expected  second derivative of log-Likelihood with respect to parameter
+  d2ldp2 <- ifelse(d2ldp2 < -1e-15, d2ldp2, -1e-15)
+  wt <- -(d2ldp2/(dr*dr)) # weights for Fisher-scoring algorithm =-(d2l/d2p)(dparameter/deta)^2
+  # we need to stop the weights to go to Infty
+  wt <- ifelse(wt>1e+10,1e+10,wt)
+  wt <- ifelse(wt<1e-10,1e-10,wt)
+  wv <- eta+dldp/(dr*wt)
+  if (family$type=="Mixed"){
+    wv <-ifelse(is.nan(wv),0,wv)
+  }
+  
+  ## Calculate penalty
+  pen <- sum(eta*wt*(wv-eta))
   
   ## Check whether distribution parameter valid
   errorMessage <- NULL
@@ -341,7 +382,7 @@ gamlssDS6 <- function(parameter = parameter, formula = formula,
   # III) Output ----
   #**************************************************************************
   
-  return(list(dv=dv, errorMessage3=errorMessage))
+  return(list(dv=dv, pen=pen, errorMessage3=errorMessage))
   
 } 
 # AGGREGATE FUNCTION
