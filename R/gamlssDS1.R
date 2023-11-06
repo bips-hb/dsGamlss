@@ -171,6 +171,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     if(length(mod.gamlss.ds$mu.coefSmo)>0){
       for(i in 1:length(mod.gamlss.ds$mu.coefSmo)){
         mod.gamlss.ds$mu.coefSmo[[i]]$fv <- "The smoothing fitted values of the mu model are not disclosed!"
+        mod.gamlss.ds$mu.coefSmo[[i]]$fun <- "The function for the knots of the mu model is not disclosed!"
         smoother.names <- c(smoother.names, mod.gamlss.ds$mu.coefSmo[[i]]$name)
       }
     }
@@ -187,6 +188,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     if(length(mod.gamlss.ds$sigma.coefSmo)>0){
       for(i in 1:length(mod.gamlss.ds$sigma.coefSmo)){
         mod.gamlss.ds$sigma.coefSmo[[i]]$fv <- "The smoothing fitted values of the sigma model are not disclosed!"
+        mod.gamlss.ds$sigma.coefSmo[[i]]$fun <- "The function for the knots of the sigma model is not disclosed!"
         smoother.names <- c(smoother.names, mod.gamlss.ds$sigma.coefSmo[[i]]$name)
       }
     }
@@ -203,6 +205,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     if(length(mod.gamlss.ds$nu.coefSmo)>0){
       for(i in 1:length(mod.gamlss.ds$nu.coefSmo)){
         mod.gamlss.ds$nu.coefSmo[[i]]$fv <- "The smoothing fitted values of the nu model are not disclosed!"
+        mod.gamlss.ds$nu.coefSmo[[i]]$fun <- "The function for the knots of the nu model is not disclosed!"
         smoother.names <- c(smoother.names, mod.gamlss.ds$nu.coefSmo[[i]]$name)
       }
     }
@@ -219,6 +222,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     if(length(mod.gamlss.ds$tau.coefSmo)>0){
       for(i in 1:length(mod.gamlss.ds$tau.coefSmo)){
         mod.gamlss.ds$tau.coefSmo[[i]]$fv <- "The smoothing fitted values of the tau model are not disclosed!"
+        mod.gamlss.ds$tau.coefSmo[[i]]$fun <- "The function for the knots of the tau model is not disclosed!"
         smoother.names <- c(smoother.names, mod.gamlss.ds$tau.coefSmo[[i]]$name)
       }
     }
