@@ -23,6 +23,14 @@
 #' i.e. BI. Family functions can take arguments, as in BI(mu.link=probit).
 #' @param data an optional character string specifying a data.frame object holding 
 #' the data to be analysed under the specified model 
+#' @param mu.fix logical, indicating whether the mu parameter should be kept fixed
+#' in the fitting processes.
+#' @param sigma.fix logical, indicating whether the sigma parameter should be kept
+#' fixed in the fitting processes.
+#' @param nu.fix logical, indicating whether the nu parameter should be kept fixed 
+#' in the fitting processes.
+#' @param tau.fix logical, indicating whether the tau parameter should be kept fixed
+#' in the fitting processes.
 #' @param control this sets the control parameters of the outer iterations algorithm 
 #' using the gamlss.control function. This is a vector of 7 numeric values: (i) c.crit 
 #' (the convergence criterion for the algorithm), (ii) n.cyc (the number of cycles of 
@@ -49,7 +57,8 @@
 #'
 
 gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formula = nu.formula,
-                     tau.formula = tau.formula, family = family, data=data,
+                     tau.formula = tau.formula, family = family, data=data, mu.fix=mu.fix,
+                     sigma.fix=sigma.fix, nu.fix=nu.fix, tau.fix=tau.fix,
                      control = control, i.control = i.control){
   
   

@@ -71,7 +71,8 @@
 
 gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = sigma.formula,
                       nu.formula = nu.formula, tau.formula = tau.formula, family = family, 
-                      data = data, mu.beta.vect = mu.beta.vect, sigma.beta.vect = sigma.beta.vect,
+                      data = data, mu.fix = mu.fix, sigms.fix = sigma.fix, nu.fix = nu.fix, 
+                      tau.fix = tau.fix, mu.beta.vect = mu.beta.vect, sigma.beta.vect = sigma.beta.vect,
                       nu.beta.vect = nu.beta.vect, tau.beta.vect = tau.beta.vect,
                       control = control, i.control = i.control){
   

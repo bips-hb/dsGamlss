@@ -83,6 +83,8 @@
 gamlssDS4 <- function(parameter = parameter, smoother = smoother, formula = formula, 
                       sigma.formula = sigma.formula, nu.formula = nu.formula, 
                       tau.formula = tau.formula, family = family, data = data, 
+                      mu.fix = mu.fix, sigma.fix = sigma.fix, nu.fix = nu.fix, 
+                      tau.fix = tau.fix,
                       mu.beta.vect = mu.beta.vect, sigma.beta.vect = sigma.beta.vect,
                       nu.beta.vect = nu.beta.vect, tau.beta.vect = tau.beta.vect,
                       mu.gamma.vect = mu.gamma.vect, sigma.gamma.vect = sigma.gamma.vect,
