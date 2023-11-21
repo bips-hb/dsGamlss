@@ -173,8 +173,10 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     mod.gamlss.ds$mu.lp <- "The linear predictors of the mu model are not disclosed!"
     mod.gamlss.ds$mu.wv <- "The working variable of the mu model are not disclosed!"
     mod.gamlss.ds$mu.wt <- "The working weights of the mu model are not disclosed!"
+    mod.gamlss.ds$mu.terms <- NULL
     mod.gamlss.ds$mu.x <- "The design matrix of the mu model is not disclosed!"
     mod.gamlss.ds$mu.qr <- "The QR decomposition of the mu model is not disclosed!"
+    mod.gamlss.ds$mu.formula <- NULL
     mod.gamlss.ds$mu.s <- "The smoothing fitted values of the mu model are not disclosed!"
     mod.gamlss.ds$mu.var <- "The variances for the smoothing fitted values of the mu model are not disclosed!"
     if(length(mod.gamlss.ds$mu.coefSmo)>0){
@@ -190,8 +192,10 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     mod.gamlss.ds$sigma.lp <- "The linear predictors of the sigma model are not disclosed!"
     mod.gamlss.ds$sigma.wv <- "The working variable of the sigma model are not disclosed!"
     mod.gamlss.ds$sigma.wt <- "The working weights of the sigma model are not disclosed!"
+    mod.gamlss.ds$sigma.terms <- NULL
     mod.gamlss.ds$sigma.x <- "The design matrix of the sigma model is not disclosed!"
     mod.gamlss.ds$sigma.qr <- "The QR decomposition of the sigma model is not disclosed!"
+    mod.gamlss.ds$sigma.formula <- NULL
     mod.gamlss.ds$sigma.s <- "The smoothing fitted values of the sigma model are not disclosed!"
     mod.gamlss.ds$sigma.var <- "The variances for the smoothing fitted values of the sigma model are not disclosed!"
     if(length(mod.gamlss.ds$sigma.coefSmo)>0){
@@ -207,8 +211,10 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     mod.gamlss.ds$nu.lp <- "The linear predictors of the nu model are not disclosed!"
     mod.gamlss.ds$nu.wv <- "The working variable of the nu model are not disclosed!"
     mod.gamlss.ds$nu.wt <- "The working weights of the nu model are not disclosed!"
+    mod.gamlss.ds$nu.terms <- NULL
     mod.gamlss.ds$nu.x <- "The design matrix of the nu model is not disclosed!"
     mod.gamlss.ds$nu.qr <- "The QR decomposition of the nu model is not disclosed!"
+    mod.gamlss.ds$nu.formula <- NULL
     mod.gamlss.ds$nu.s <- "The smoothing fitted values of the nu model are not disclosed!"
     mod.gamlss.ds$nu.var <- "The variances for the smoothing fitted values of the nu model are not disclosed!"
     if(length(mod.gamlss.ds$nu.coefSmo)>0){
@@ -224,8 +230,10 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     mod.gamlss.ds$tau.lp <- "The linear predictors of the tau model are not disclosed!"
     mod.gamlss.ds$tau.wv <- "The working variable of the tau model are not disclosed!"
     mod.gamlss.ds$tau.wt <- "The working weights of the tau model are not disclosed!"
+    mod.gamlss.ds$tau.terms <- NULL
     mod.gamlss.ds$tau.x <- "The design matrix of the tau model is not disclosed!"
     mod.gamlss.ds$tau.qr <- "The QR decomposition of the tau model is not disclosed!"
+    mod.gamlss.ds$tau.formula <- NULL
     mod.gamlss.ds$tau.s <- "The smoothing fitted values of the tau model are not disclosed!"
     mod.gamlss.ds$tau.var <- "The variances for the smoothing fitted values of the tau model are not disclosed!"
     if(length(mod.gamlss.ds$tau.coefSmo)>0){
