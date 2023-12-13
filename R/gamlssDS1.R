@@ -31,6 +31,10 @@
 #' in the fitting processes.
 #' @param tau.fix logical, indicating whether the tau parameter should be kept fixed
 #' in the fitting processes.
+#' @param global.mean numeric value, giving the global mean of the outcome variable
+#' (necessary to initialize the distribution parameter for some families, otherwise NULL)
+#' @param global.sd numeric value, giving the global sd of the outcome variable
+#' (necessary to initialize the distribution parameter for some families, otherwise NULL)
 #' @param control this sets the control parameters of the outer iterations algorithm 
 #' using the gamlss.control function. This is a vector of 7 numeric values: (i) c.crit 
 #' (the convergence criterion for the algorithm), (ii) n.cyc (the number of cycles of 
@@ -58,7 +62,8 @@
 
 gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formula = nu.formula,
                      tau.formula = tau.formula, family = family, data=data, mu.fix=mu.fix,
-                     sigma.fix=sigma.fix, nu.fix=nu.fix, tau.fix=tau.fix,
+                     sigma.fix = sigma.fix, nu.fix = nu.fix, tau.fix = tau.fix,
+                     global.mean = global.mean, global.sd = global.sd,
                      control = control, i.control = i.control){
   
   
@@ -123,6 +128,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   family <- gsub("right_parenthesis", ")", family, fixed = TRUE)
   family <- gsub("equal_symbol", "=", family, fixed = TRUE)
   family <- gsub("comma_symbol", ",", family, fixed = TRUE)
+  familytext <- family
   family <- gamlss.dist::as.family(eval(parse(text=family), env=environment()))
   
   c1 <- as.numeric(unlist(strsplit(control, split=",")))
@@ -282,11 +288,15 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   ## Initialize & save the parameter vectors on the server-side
   # since they might be disclosive they cannot be returned to the client
   if("mu" %in% names(family$parameters)){
-    eval(family$mu.initial, env=environment())
+    mu <- (y + global.mean)/2
     base::assign("mu", mu, env=parent.frame())
   }
   if("sigma" %in% names(family$parameters)){
-    eval(family$sigma.initial, env=environment())
+    if (familytext=="NO()"){
+      sigma <- rep(global.sd, length(y))
+    } else {
+      eval(family$sigma.initial, env=environment())
+    }
     base::assign("sigma", sigma, env=parent.frame())
   }
   if("nu" %in% names(family$parameters)){
