@@ -270,9 +270,8 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
         stop("gamlssDS1 with smoothers requires 'datashield.seed' R option to operate", call.=FALSE)
       }else{
         set.seed(seed)
-        x.new <- x + stats::rnorm(n=length(x), mean=0, sd=sqrt(nfilter.noise*stats::var(x)))
-        smoother.xmin[i] <- min(x.new)
-        smoother.xmax[i] <- max(x.new)
+        smoother.xmin[i] <- min(x) - abs(rnorm(n=1, mean=0, sd=sqrt(nfilter.noise*stats::var(x))))
+        smoother.xmax[i] <- max(x) + abs(rnorm(n=1, mean=0, sd=sqrt(nfilter.noise*stats::var(x))))
       }
     }
   }else{  # the model does not include smoothers
