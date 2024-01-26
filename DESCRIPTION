@@ -12,7 +12,8 @@ AggregateMethods: gamlssDS1,
                   gamlssDS3,
                   gamlssDS4,
                   gamlssDS5,
-                  gamlssDS6
+                  gamlssDS6,
+                  gamlssDS7
 AssignMethods: 
 Options: datashield.privacyLevel=5
 RoxygenNote: 7.2.3
