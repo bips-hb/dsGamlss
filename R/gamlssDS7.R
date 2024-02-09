@@ -61,6 +61,60 @@ gamlssDS7 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   # I) Preparation ---- 
   #**************************************************************************
   
+  ## Define internal function as in gamlss that is used to estimate normalized quantile residuals
+  rqres <- function (pfun = "pNO", type = c("Continuous", "Discrete", "Mixed"), 
+                     censored = NULL, ymin = NULL, mass.p = NULL, prob.mp = NULL, 
+                     y = y, ...) 
+  {
+    type <- match.arg(type)
+    cdf <- eval(parse(text = pfun))
+    switch(type, Continuous = {
+      rqres <- qnorm(cdf(q = y, ...))
+    }, Discrete = {
+      if (is.null(censored)) {
+        aval <- cdf(ifelse(y == ymin, y, y - 1), ...)
+        aval <- ifelse(y == ymin, 0, aval)
+        bval <- cdf(q = y, ...)
+        uval <- runif(length(y), aval, bval)
+        uval <- ifelse(uval > 0.999999, uval - 1e-16, uval)
+        uval <- ifelse(uval < 1e-06, uval + 1e-16, uval)
+        rqres <- qnorm(uval)
+      } else {
+        qq <- ifelse(y[, 1] == ymin, y[, 1], y[, 1] - 1)
+        aval <- cdf(Surv(qq, y[, 2]), ...)
+        aval <- ifelse(y[, 1] == ymin, 0, aval)
+        bval <- cdf(q = y, ...)
+        uval <- runif(length(y[, 1]), min = aval, max = bval)
+        uval <- ifelse(uval > 0.999999, uval - 1e-16, uval)
+        uval <- ifelse(uval < 1e-06, uval + 1e-16, uval)
+        rqres <- qnorm(ifelse(y[, "status"] == 1, uval, bval))
+      }
+    }, Mixed = {
+      if (is.null(mass.p) && is.null(prob.mp)) stop("For mixed distributions mass.p and prob.mp arguments have to be specified")
+      length.mass.p <- length(mass.p)
+      switch(length.mass.p, {
+        if (mass.p == 0) {
+          uval <- ifelse(y == mass.p, runif(length(y), 
+                                            0, prob.mp), cdf(q = y, ...))
+        } else if (mass.p == 1) {
+          uval <- ifelse(y == mass.p, runif(length(y), 
+                                            1 - prob.mp, 1), cdf(q = y, ...))
+        } else {
+          stop("mass point is not at zero or one")
+        }
+      }, {
+        uval <- ifelse(y == mass.p[1], runif(length(y), 0, 
+                                             prob.mp[, 1]), 0)
+        uval <- ifelse(y > mass.p[1] & y < mass.p[2], cdf(q = y, 
+                                                          ...), uval)
+        uval <- ifelse(y == 1, runif(length(y), 1 - prob.mp[, 
+                                                            2], 1), uval)
+      })
+      rqres <- qnorm(uval)
+    })
+    rqres
+  }
+  
   ## Get the value of the 'data' parameter provided as character on the client side
   dataname <- data
   if(is.null(dataname)){
@@ -139,6 +193,21 @@ gamlssDS7 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   
   ## get outcome
   y <- as.vector(mod.gamlss.ds$y)
+  
+  ## Get fitted values for all distribution parameters
+  # necessary for all parameters to calculate deviance
+  if("mu" %in% names(family$parameters)){
+    mu <- base::get("mu", env=parent.frame())
+  }
+  if("sigma" %in% names(family$parameters)){
+    sigma <- base::get("sigma", env=parent.frame())
+  }
+  if("nu" %in% names(family$parameters)){
+    nu <- base::get("nu", env=parent.frame())
+  }
+  if("tau" %in% names(family$parameters)){
+    tau <- base::get("tau", env=parent.frame())
+  }
   
   #**************************************************************************
   # III) Calculate residuals ----  
