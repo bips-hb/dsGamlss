@@ -115,6 +115,8 @@ gamlssDS7 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     rqres
   }
   
+  body(rqres) <-  eval(quote(body(rqres)), envir = parent.frame())
+  
   ## Get the value of the 'data' parameter provided as character on the client side
   dataname <- data
   if(is.null(dataname)){
