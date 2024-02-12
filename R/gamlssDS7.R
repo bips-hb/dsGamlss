@@ -45,6 +45,8 @@
 #' algorithm), (iv) bf.tol (the convergence criterion (tolerance level) for the 
 #' backfitting algorithm). The default values for these 4 parameters are set to 
 #' c(0.001, 50, 30, 0.001).
+#' @param k the number of the nearest neighbours for which the mean is calculated
+#' in the anonymization procedure.
 #' @return anonymized normalized quantile residuals for the gamlss model fitted with 
 #' ds.gamlss. 
 #' @author Annika Swenne
@@ -55,13 +57,17 @@
 gamlssDS7 <- function(formula = formula, sigma.formula = sigma.formula, nu.formula = nu.formula,
                       tau.formula = tau.formula, family = family, data=data, mu.fix=mu.fix,
                       sigma.fix = sigma.fix, nu.fix = nu.fix, tau.fix = tau.fix,
-                      control = control, i.control = i.control){
+                      control = control, i.control = i.control, k = k){
   
   #**************************************************************************
   # I) Preparation ---- 
   #**************************************************************************
   
-  # this is to replicate rqres within gamlss enviroment DS Friday, March 31, 2006 at 10:30
+  ## Capture the nfilter settings
+  thr <- dsBase::listDisclosureSettingsDS()
+  nfilter.kNN <- as.numeric(thr$nfilter.kNN)   
+  
+  ## Replicate rqres within gamlss enviroment 
   rqres <- function (pfun="pNO", type=c("Continuous", "Discrete", "Mixed"), censored=NULL,  
                      ymin=NULL, mass.p=NULL, prob.mp=NULL, y=y, ... ){ 
     # function to calculate the normalized (randomized) quantile residuals of the gamlss object
@@ -164,8 +170,43 @@ gamlssDS7 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   
   #**************************************************************************
   # III) Calculate residuals ----  
+  # apply k-nearest neighbour anonymisation to residuals as used in
+  # scatterPlotDS (method.indicator=1)
   #**************************************************************************
   
   residuals <- eval(family$rqres)
-  return(residuals)
+  residuals <- stats::na.omit(residuals) 
+  nresid <- length(residuals)
+  
+  # standardise the residuals (maybe not necessary)
+  # residuals approximate standard normal distribution if model correct
+  residuals.standardised <- (residuals-mean(residuals))/stats::sd(residuals)
+  
+  # Check if k is integer and has a value greater than or equal to the pre-specified threshold
+  # and less than or equal to the length of rows of data.complete minus the pre-specified threshold
+  if(k < nfilter.kNN | k > (nresid - nfilter.kNN)){
+    stop(paste0("k must be greater than or equal to ", nfilter.kNN, "and less than or equal to ", (nresid-nfilter.kNN), "."), call.=FALSE)
+  }else{
+    neighbours <- k
+  }
+  
+  # Find the k-1 nearest neighbours of each data point
+  nearest <- RANN::nn2(residuals.standardised, k=neighbours)
+  
+  # Calculate the centroid of each n nearest data points
+  residuals.centroid <- matrix()
+  for (i in 1:nresid){
+    residuals.centroid[i] <- mean(residuals.standardised[nearest$nn.idx[i,1:neighbours]])
+  }
+  
+  # Calculate the scaling factor
+  residuals.scalingFactor <- stats::sd(residuals.standardised)/stats::sd(residuals.centroid)
+  
+  # Apply the scaling factor to the centroids
+  residuals.masked <- residuals.centroid * residuals.scalingFactor
+  
+  # Shift the centroids back to the actual position and scale of the original data
+  residuals.new <- (residuals.masked * stats::sd(residuals)) + mean(residuals)
+  
+  return(residuals.new)
 }
