@@ -16,7 +16,8 @@ gamlssDS7(
   nu.fix = nu.fix,
   tau.fix = tau.fix,
   control = control,
-  i.control = i.control
+  i.control = i.control,
+  k = k
 )
 }
 \arguments{
@@ -72,6 +73,9 @@ cycles of the algorithm), (iii) bf.cyc (the number of cycles of the backfitting
 algorithm), (iv) bf.tol (the convergence criterion (tolerance level) for the 
 backfitting algorithm). The default values for these 4 parameters are set to 
 c(0.001, 50, 30, 0.001).}
+
+\item{k}{the number of the nearest neighbours for which the mean is calculated
+in the anonymization procedure.}
 }
 \value{
 anonymized normalized quantile residuals for the gamlss model fitted with 

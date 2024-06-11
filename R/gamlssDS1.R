@@ -55,8 +55,6 @@
 #' residuals (the normalised quantile residuals of the model) are not disclosed to 
 #' the client-side.
 #' @author Annika Swenne
-#' @import gamlss
-#' @import gamlss.dist
 #' @export
 #'
 
@@ -84,7 +82,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   if(is.null(data)){
     dataTable <- NULL 
   }else{
-    dataTable <- eval(parse(text=data), env=parent.frame())
+    dataTable <- eval(parse(text=data), envir=parent.frame())
   }
   
   ## Reconvert the special symbols to create the appropriate formula & gamlss.family objects
@@ -129,7 +127,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   family <- gsub("equal_symbol", "=", family, fixed = TRUE)
   family <- gsub("comma_symbol", ",", family, fixed = TRUE)
   familytext <- family
-  family <- gamlss.dist::as.family(eval(parse(text=family), env=environment()))
+  family <- gamlss.dist::as.family(eval(parse(text=family), envir=environment()))
   
   c1 <- as.numeric(unlist(strsplit(control, split=",")))
   c2 <- as.numeric(unlist(strsplit(i.control, split=",")))
@@ -143,14 +141,14 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   # suppressWarnings to avoid the warning that the algorithm has not yet converged
   mod.gamlss.ds <- base::suppressWarnings(gamlss::gamlss(formula=formula2use, sigma.formula=sigma.formula2use, 
                                                          nu.formula=nu.formula2use, tau.formula=tau.formula2use,
-                                                         family=family, data=dataTable, method=RS(),
+                                                         family=family, data=dataTable,
                                                          mu.fix=mu.fix, sigma.fix=sigma.fix, nu.fix=nu.fix,
                                                          tau.fix=tau.fix,
-                                                         control = gamlss.control(c.crit=c1[1], n.cyc=1, 
+                                                         control = gamlss::gamlss.control(c.crit=c1[1], n.cyc=1, 
                                                                                   mu.step=c1[3], sigma.step=c1[4], 
                                                                                   nu.step=c1[5], tau.step=c1[6],
                                                                                   gd.tol=c1[7], trace=FALSE),
-                                                         i.control = glim.control(cc=c2[1], cyc=1, 
+                                                         i.control = gamlss::glim.control(cc=c2[1], cyc=1, 
                                                                                   bf.cyc=1, bf.tol=c2[4])))
   
   mu.x <- mod.gamlss.ds$mu.x
@@ -263,15 +261,15 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     smoother.xmin <- rep(NA, length(smoother.names))
     smoother.xmax <- rep(NA, length(smoother.names))
     for (i in 1:length(smoother.names)){
-      x <- eval(parse(text=smoother.names[i]), env=parent.frame())
+      x <- eval(parse(text=smoother.names[i]), envir=parent.frame())
       # the study-specific seed for random number generation
       seed <- getOption("datashield.seed")
       if (is.null(seed)){
         stop("gamlssDS1 with smoothers requires 'datashield.seed' R option to operate", call.=FALSE)
       }else{
         set.seed(seed)
-        smoother.xmin[i] <- min(x) - abs(rnorm(n=1, mean=0, sd=sqrt(nfilter.noise*stats::var(x))))
-        smoother.xmax[i] <- max(x) + abs(rnorm(n=1, mean=0, sd=sqrt(nfilter.noise*stats::var(x))))
+        smoother.xmin[i] <- min(x) - abs(stats::rnorm(n=1, mean=0, sd=sqrt(nfilter.noise*stats::var(x))))
+        smoother.xmax[i] <- max(x) + abs(stats::rnorm(n=1, mean=0, sd=sqrt(nfilter.noise*stats::var(x))))
       }
     }
   }else{  # the model does not include smoothers
@@ -286,6 +284,11 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
 
   ## Initialize & save the parameter vectors on the server-side
   # since they might be disclosive they cannot be returned to the client
+  mu <- NULL
+  sigma <- NULL
+  nu <- NULL
+  tau <- NULL
+  
   if("mu" %in% names(family$parameters)){
     mu <- (y + global.mean)/2
     base::assign("mu", mu, env=parent.frame())
@@ -294,16 +297,16 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     if (familytext=="NO()"){
       sigma <- rep(global.sd, length(y))
     } else {
-      eval(family$sigma.initial, env=environment())
+      eval(family$sigma.initial, envir=environment())
     }
     base::assign("sigma", sigma, env=parent.frame())
   }
   if("nu" %in% names(family$parameters)){
-    eval(family$nu.initial, env=environment())
+    eval(family$nu.initial, envir=environment())
     base::assign("nu", nu, env=parent.frame())
   }
   if("tau" %in% names(family$parameters)){
-    eval(family$tau.initial, env=environment())
+    eval(family$tau.initial, envir=environment())
     base::assign("tau", tau, env=parent.frame())
   }
   
@@ -326,7 +329,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   }
 
   ## Initialize deviance
-  G.dev.incr  <- eval(body(family$G.dev.incr), env=environment())  # deviance increment (function provided by gamlss.family object)
+  G.dev.incr  <- eval(body(family$G.dev.incr), envir=environment())  # deviance increment (function provided by gamlss.family object)
   G.dev <- sum(G.dev.incr)  # the weighted global deviance
 
   #**************************************************************************

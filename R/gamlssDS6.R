@@ -80,8 +80,6 @@
 #' residuals (the normalised quantile residuals of the model) are not disclosed to 
 #' the client-side.
 #' @author Annika Swenne
-#' @import gamlss
-#' @import gamlss.dist
 #' @export
 #'
 
@@ -112,7 +110,7 @@ gamlssDS6 <- function(parameter = parameter, formula = formula,
   if(is.null(dataname)){
     data <- NULL 
   }else{
-    data <- eval(parse(text=dataname), env=parent.frame())
+    data <- eval(parse(text=dataname), envir=parent.frame())
   }
   Ntotal <- dim(data)[1]
   
@@ -157,7 +155,7 @@ gamlssDS6 <- function(parameter = parameter, formula = formula,
   family <- gsub("right_parenthesis", ")", family, fixed = TRUE)
   family <- gsub("equal_symbol", "=", family, fixed = TRUE)
   family <- gsub("comma_symbol", ",", family, fixed = TRUE)
-  family <- gamlss.dist::as.family(eval(parse(text=family), env=environment()))
+  family <- gamlss.dist::as.family(eval(parse(text=family), envir=environment()))
   
   dev.function <- family$G.dev.incr
   
@@ -178,8 +176,8 @@ gamlssDS6 <- function(parameter = parameter, formula = formula,
   nu.gamma.vect <- as.numeric(unlist(strsplit(nu.gamma.vect, split=",")))
   tau.gamma.vect <- as.numeric(unlist(strsplit(tau.gamma.vect, split=",")))
   # get the beta and gammma vectors for the respective parameter
-  beta.vect <- eval(parse(text=paste(parameter, ".beta.vect", sep="")), env=environment())
-  gamma.vect <- eval(parse(text=paste(parameter, ".gamma.vect", sep="")), env=environment())
+  beta.vect <- eval(parse(text=paste(parameter, ".beta.vect", sep="")), envir=environment())
+  gamma.vect <- eval(parse(text=paste(parameter, ".gamma.vect", sep="")), envir=environment())
   
   # Convert knot boundaries from transmittable (character) format to numeric
   smoother.xl <- as.numeric(unlist(strsplit(smoother.xl, split=",")))
@@ -194,31 +192,31 @@ gamlssDS6 <- function(parameter = parameter, formula = formula,
   # to increase computational speed the number of inner and backfitting iterations are set to 1
   mod.gamlss.ds <- base::suppressWarnings(gamlss::gamlss(formula=formula2use, sigma.formula=sigma.formula2use, 
                                                          nu.formula=nu.formula2use, tau.formula=tau.formula2use,
-                                                         family=family, data=data, method=RS(), mu.fix=mu.fix, 
+                                                         family=family, data=data, mu.fix=mu.fix, 
                                                          sigma.fix=sigma.fix, nu.fix=nu.fix, tau.fix=tau.fix,
-                                                         control = gamlss.control(c.crit=c1[1], n.cyc=1, 
+                                                         control = gamlss::gamlss.control(c.crit=c1[1], n.cyc=1, 
                                                                                   mu.step=c1[3], sigma.step=c1[4], 
                                                                                   nu.step=c1[5], tau.step=c1[6],
                                                                                   gd.tol=c1[7], trace=FALSE),
-                                                         i.control = glim.control(cc=c2[1], cyc=1, 
+                                                         i.control = gamlss::glim.control(cc=c2[1], cyc=1, 
                                                                                   bf.cyc=1, bf.tol=c2[4])))
   
   ## get design matrix for the parameter
-  X.mat <- as.matrix(eval(parse(text=paste("mod.gamlss.ds$", parameter, ".x", sep="")), env=environment()))
+  X.mat <- as.matrix(eval(parse(text=paste("mod.gamlss.ds$", parameter, ".x", sep="")), envir=environment()))
   y <- as.vector(mod.gamlss.ds$y)
   
   ## get design matrix for the smoothers
   # get the control parameters for the smoothers
-  coefficients <- eval(parse(text=paste("names(mod.gamlss.ds$", parameter, ".coefficients)", sep="")), env=environment())
+  coefficients <- eval(parse(text=paste("names(mod.gamlss.ds$", parameter, ".coefficients)", sep="")), envir=environment())
   smoother.coef <- coefficients[grep(pattern="pb(", x=tolower(coefficients), fixed=TRUE)]
   # only keep the arguments for the pb() function
   pb.args <- substr(smoother.coef, start=4, stop=nchar(smoother.coef)-1)
   pb.args <- strsplit(pb.args, split=",", fixed=TRUE)
   
   # create design matrices for all smoothers if possible
-  if (length(eval(parse(text=paste("mod.gamlss.ds$", parameter, ".coefSmo", sep="")), env=environment()))>0){
-    for (i in 1:length(eval(parse(text=paste("mod.gamlss.ds$", parameter, ".coefSmo", sep="")), env=environment()))){
-      name <- eval(parse(text=paste("mod.gamlss.ds$", parameter, ".coefSmo[[", i, "]]$name", sep="")), env=environment())
+  if (length(eval(parse(text=paste("mod.gamlss.ds$", parameter, ".coefSmo", sep="")), envir=environment()))>0){
+    for (i in 1:length(eval(parse(text=paste("mod.gamlss.ds$", parameter, ".coefSmo", sep="")), envir=environment()))){
+      name <- eval(parse(text=paste("mod.gamlss.ds$", parameter, ".coefSmo[[", i, "]]$name", sep="")), envir=environment())
       if (length(grep(pattern="pb.control", x=pb.args[[i]], fixed=TRUE))>0) {
         # control parameters specified
         pb.control <- eval(parse(text=pb.args[[i]][grep(pattern="pb.control", x=pb.args[[i]], fixed=TRUE)]))
@@ -226,7 +224,7 @@ gamlssDS6 <- function(parameter = parameter, formula = formula,
         # no control parameters specified - use default
         pb.control <- eval(parse(text="pb.control()"))
       }
-      x <- eval(parse(text=name), env=parent.frame())
+      x <- eval(parse(text=name), envir=parent.frame())
       basismatrix <- bbase(x=x, xl=smoother.xl[which(smoother.names==name)], xr=smoother.xr[which(smoother.names==name)],
                            ndx=pb.control$inter, deg=pb.control$degree)
       base::assign(paste("Z", i, ".mat", sep=""), basismatrix, env=environment())
@@ -251,7 +249,7 @@ gamlssDS6 <- function(parameter = parameter, formula = formula,
   ## calculate smoothing fitted value matrix s
   # get the gamma vectors for the respective parameter & multiply them with the matrices
   gamma.start <- 1
-  coefSmo <- eval(parse(text=paste("mod.gamlss.ds$", parameter, ".coefSmo", sep="")), env=environment())
+  coefSmo <- eval(parse(text=paste("mod.gamlss.ds$", parameter, ".coefSmo", sep="")), envir=environment())
   if (!is.null(coefSmo)){
     s.old <- base::get(paste(parameter, ".s", sep=""), env=parent.frame())
     s <- NULL
@@ -259,7 +257,7 @@ gamlssDS6 <- function(parameter = parameter, formula = formula,
       gamma.length <- dim(coefSmo[[i]]$coef)[1]
       gamma.end <- gamma.start+gamma.length-1
       gamma <- gamma.vect[gamma.start:gamma.end]
-      Z.mat <- eval(parse(text=paste("Z", i, ".mat", sep="")), env=environment())
+      Z.mat <- eval(parse(text=paste("Z", i, ".mat", sep="")), envir=environment())
       s <- cbind(s, Z.mat %*% gamma)
       gamma.start <- gamma.end+1
     }
@@ -270,7 +268,7 @@ gamlssDS6 <- function(parameter = parameter, formula = formula,
   
   #*B) Update distribution parameter vector----
   # Calculate predictor vector eta for the parameter
-  eta.old <- eval(parse(text=paste("family$", parameter, ".linkfun(", parameter, ")", sep="")), env=environment())
+  eta.old <- eval(parse(text=paste("family$", parameter, ".linkfun(", parameter, ")", sep="")), envir=environment())
   eta <- as.vector(X.mat %*% beta.vect + base::rowSums(as.matrix(s)))
   
   ## Weighting of the estimates
@@ -279,7 +277,7 @@ gamlssDS6 <- function(parameter = parameter, formula = formula,
   # fixed step size (method 1 as described in Stasinopolous et al. 2020, p.66)
   if (inner.iteration.count>1 & (autostep==FALSE | autostep.count==1)){
     # no weighting for the first inner iteration (old estimates not reasonable)
-    step <- eval(parse(text=paste(parameter, ".step", sep="")), env=environment())
+    step <- eval(parse(text=paste(parameter, ".step", sep="")), envir=environment())
     eta <- step*eta+(1-step)*eta.old
     if (!is.null(coefSmo)){
       s <- step*s+(1-step)*s.old
@@ -304,7 +302,7 @@ gamlssDS6 <- function(parameter = parameter, formula = formula,
   } 
   
   ## Save the new estimates
-  fv <- eval(parse(text=paste("family$", parameter, ".linkinv(eta)", sep="")), env=environment())
+  fv <- eval(parse(text=paste("family$", parameter, ".linkinv(eta)", sep="")), envir=environment())
   
   if (autostep==FALSE | autostep.count>0){
     # Save the smoothing fitted values
@@ -316,44 +314,44 @@ gamlssDS6 <- function(parameter = parameter, formula = formula,
   }
 
   ## Calculate derivatives & deviance
-  dr <- eval(parse(text=paste("family$", parameter, ".dr(eta)", sep="")), env=environment())  # dparameter/ deta
+  dr <- eval(parse(text=paste("family$", parameter, ".dr(eta)", sep="")), envir=environment())  # dparameter/ deta
   dr <- 1/dr  # deta/ dparameter = 1/ (dparameter/ deta)
   
   if (parameter=="mu"){
-    formals(dev.function, env=new.env()) <- alist(mu = fv)
+    formals(dev.function, envir=new.env()) <- alist(mu = fv)
     # first derivative of log-likelihood
     dldp.function <- family$dldm
-    formals(dldp.function, env=new.env()) <- alist(mu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    formals(dldp.function, envir=new.env()) <- alist(mu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
     # second derivative of log-likelihood
     d2ldp2.function <- family$d2ldm2
-    formals(d2ldp2.function, env=new.env()) <- alist(mu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    formals(d2ldp2.function, envir=new.env()) <- alist(mu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
   }
   if (parameter=="sigma"){
-    formals(dev.function, env=new.env()) <- alist(sigma = fv)
+    formals(dev.function, envir=new.env()) <- alist(sigma = fv)
     # first derivative of log-likelihood
     dldp.function <- family$dldd
-    formals(dldp.function, env=new.env()) <- alist(sigma = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    formals(dldp.function, envir=new.env()) <- alist(sigma = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
     # second derivative of log-likelihood
     d2ldp2.function <- family$d2ldd2
-    formals(d2ldp2.function, env=new.env()) <- alist(sigma = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    formals(d2ldp2.function, envir=new.env()) <- alist(sigma = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
   }
   if (parameter=="nu"){
-    formals(dev.function, env=new.env()) <- alist(nu = fv)
+    formals(dev.function, envir=new.env()) <- alist(nu = fv)
     # first derivative of log-likelihood
     dldp.function <- family$dldv
-    formals(dldp.function, env=new.env()) <- alist(nu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    formals(dldp.function, envir=new.env()) <- alist(nu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
     # second derivative of log-likelihood
     d2ldp2.function <- family$d2ldv2
-    formals(d2ldp2.function, env=new.env()) <- alist(nu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    formals(d2ldp2.function, envir=new.env()) <- alist(nu = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
   }
   if (parameter=="tau"){
-    formals(dev.function, env=new.env()) <- alist(tau = fv)
+    formals(dev.function, envir=new.env()) <- alist(tau = fv)
     # first derivative of log-likelihood
     dldp.function <- family$dldt
-    formals(dldp.function, env=new.env()) <- alist(tau = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    formals(dldp.function, envir=new.env()) <- alist(tau = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
     # second derivative of log-likelihood
     d2ldp2.function <- family$d2ldt2
-    formals(d2ldp2.function, env=new.env()) <- alist(tau = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
+    formals(d2ldp2.function, envir=new.env()) <- alist(tau = fv)  # replace function parameters ($y, $mu, $sigma, $nu, $tau)
   }
   di <- dev.function(fv)  # deviance increment
   dv <- sum(di)  # the global deviance on the server
@@ -374,7 +372,7 @@ gamlssDS6 <- function(parameter = parameter, formula = formula,
   
   ## Check whether distribution parameter valid
   errorMessage <- NULL
-  valid <- eval(parse(text=paste("family$", parameter, ".valid(fv)", sep="")), env=environment())
+  valid <- eval(parse(text=paste("family$", parameter, ".valid(fv)", sep="")), envir=environment())
   if (is.na(!valid)){
     errorMessage <- "Fitted values in the inner iteration out of range."
   } 
