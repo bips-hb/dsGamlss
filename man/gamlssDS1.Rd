@@ -11,6 +11,10 @@ gamlssDS1(
   tau.formula = tau.formula,
   family = family,
   data = data,
+  mu.coef.start = mu.coef.start,
+  sigma.coef.start = sigma.coef.start,
+  nu.coef.start = nu.coef.start,
+  tau.coef.start = tau.coef.start,
   mu.fix = mu.fix,
   sigma.fix = sigma.fix,
   nu.fix = nu.fix,
@@ -45,6 +49,14 @@ i.e. BI. Family functions can take arguments, as in BI(mu.link=probit).}
 
 \item{data}{an optional character string specifying a data.frame object holding 
 the data to be analysed under the specified model}
+
+\item{mu.coef.start}{vector of initial values for the regression coefficients for mu}
+
+\item{sigma.coef.start}{vector of initial values for the regression coefficients for sigma}
+
+\item{nu.coef.start}{vector of initial values for the regression coefficients for nu}
+
+\item{tau.coef.start}{vector of initial values for the regression coefficients for tau}
 
 \item{mu.fix}{logical, indicating whether the mu parameter should be kept fixed
 in the fitting processes.}

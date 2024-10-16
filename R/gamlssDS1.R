@@ -23,6 +23,10 @@
 #' i.e. BI. Family functions can take arguments, as in BI(mu.link=probit).
 #' @param data an optional character string specifying a data.frame object holding 
 #' the data to be analysed under the specified model 
+#' @param mu.coef.start vector of initial values for the regression coefficients for mu
+#' @param sigma.coef.start vector of initial values for the regression coefficients for sigma
+#' @param nu.coef.start vector of initial values for the regression coefficients for nu
+#' @param tau.coef.start vector of initial values for the regression coefficients for tau
 #' @param mu.fix logical, indicating whether the mu parameter should be kept fixed
 #' in the fitting processes.
 #' @param sigma.fix logical, indicating whether the sigma parameter should be kept
@@ -59,10 +63,11 @@
 #'
 
 gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formula = nu.formula,
-                     tau.formula = tau.formula, family = family, data=data, mu.fix=mu.fix,
-                     sigma.fix = sigma.fix, nu.fix = nu.fix, tau.fix = tau.fix,
-                     global.mean = global.mean, global.sd = global.sd,
-                     control = control, i.control = i.control){
+                     tau.formula = tau.formula, family = family, data=data, mu.coef.start=mu.coef.start, 
+                     sigma.coef.start=sigma.coef.start, nu.coef.start=nu.coef.start,
+                     tau.coef.start=tau.coef.start, mu.fix=mu.fix, sigma.fix = sigma.fix, 
+                     nu.fix = nu.fix, tau.fix = tau.fix, global.mean = global.mean, 
+                     global.sd = global.sd, control = control, i.control = i.control){
   
   
   #**************************************************************************
@@ -290,23 +295,74 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   tau <- NULL
   
   if("mu" %in% names(family$parameters)){
-    mu <- (y + global.mean)/2
+    if(!is.null(mu.coef.start)){ 
+      if(length(mu.coef.start)==dim.mu.x[[2]]){
+        eta <- mu.x %*% mu.coef.start
+        mu <- as.vector(eval(parse(text="family$mu.linkinv(eta)"), envir=environment()))
+      } else{
+        warning(paste("The length of mu.coef.start does not match with the length of", dim.mu.x[[2]], "that is implied by the mu.formula. 
+                      Therefore, mu.coef.start is ignored and instead the default values are used for the initialization of mu.", sep=" "))
+        mu <- (y + global.mean)/2
+      }
+    } else{
+      mu <- (y + global.mean)/2
+    }
     base::assign("mu", mu, env=parent.frame())
   }
+  
   if("sigma" %in% names(family$parameters)){
-    if (familytext=="NO()"){
-      sigma <- rep(global.sd, length(y))
+    if(!is.null(sigma.coef.start)){
+      if(length(sigma.coef.start)==dim.sigma.x[[2]]){
+        eta <- sigma.x %*% sigma.coef.start
+        sigma <- as.vector(eval(parse(text="family$sigma.linkinv(eta)"), envir=environment()))
+      } else{
+        warning(paste("The length of sigma.coef.start does not match with the length of", dim.sigma.x[[2]], "that is implied by the sigma.formula. 
+                      Therefore, sigma.coef.start is ignored and instead the default values are used for the initialization of sigma.", sep=" "))
+        if (familytext=="NO()"){
+          sigma <- rep(global.sd, length(y))
+        } else {
+          eval(family$sigma.initial, envir=environment())
+        }
+      }
     } else {
-      eval(family$sigma.initial, envir=environment())
+      if (familytext=="NO()"){
+        sigma <- rep(global.sd, length(y))
+      } else {
+        eval(family$sigma.initial, envir=environment())
+      }
     }
     base::assign("sigma", sigma, env=parent.frame())
   }
+  
   if("nu" %in% names(family$parameters)){
-    eval(family$nu.initial, envir=environment())
+    if(!is.null(nu.coef.start)){
+      if(length(nu.coef.start)==dim.nu.x[[2]]){
+        eta <- nu.x %*% nu.coef.start
+        nu <- as.vector(eval(parse(text="family$nu.linkinv(eta)"), envir=environment()))
+      } else{
+        warning(paste("The length of nu.coef.start does not match with the length of", dim.nu.x[[2]], "that is implied by the nu.formula. 
+                      Therefore, nu.coef.start is ignored and instead the default values are used for the initialization of nu.", sep=" "))
+        eval(family$nu.initial, envir=environment())
+      }
+    } else{
+      eval(family$nu.initial, envir=environment())
+    }
     base::assign("nu", nu, env=parent.frame())
   }
+  
   if("tau" %in% names(family$parameters)){
-    eval(family$tau.initial, envir=environment())
+    if(!is.null(tau.coef.start)){
+      if(length(tau.coef.start)==dim.tau.x[[2]]){
+        eta <- tau.x %*% tau.coef.start
+        tau <- as.vector(eval(parse(text="family$tau.linkinv(eta)"), envir=environment()))
+      } else{
+        warning(paste("The length of tau.coef.start does not match with the length of", dim.tau.x[[2]], "that is implied by the tau.formula. 
+                      Therefore, tau.coef.start is ignored and instead the default values are used for the initialization of tau.", sep=" "))
+        eval(family$tau.initial, envir=environment())
+      }
+    } else{
+      eval(family$tau.initial, envir=environment())
+    }
     base::assign("tau", tau, env=parent.frame())
   }
   
