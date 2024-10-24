@@ -2,8 +2,9 @@
 #' @title gamlssDS7 called by ds.gamlss
 #' @description This is the seventh serverside aggregate function called by ds.gamlss.
 #' @details It is an aggregation function that calculates the normalized quantile
-#' residuals. For more details please see the extensive header of ds.gamlss and also the 
-#' gamlss function in native R gamlss package.
+#' residuals. Furthermore, variables that were saved during the computation are deleted 
+#' from the server. For more details please see the extensive header of ds.gamlss and 
+#' also the gamlss function in native R gamlss package.
 #' @param formula a formula object, with the response on the left of an ~ operator, 
 #' and the terms, separated by + operators, on the right. Nonparametric smoothing
 #' terms are indicated by pb() for penalised beta splines, cs for smoothing splines, 
@@ -205,6 +206,14 @@ gamlssDS7 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   
   # Shift the centroids back to the actual position and scale of the original data
   residuals.new <- (residuals.masked * stats::sd(residuals)) + mean(residuals)
+  
+  #**************************************************************************
+  # IV) Delete variables ----  
+  # delete all variables that were used during the computation and stored
+  # in the parent.frame() environment
+  #**************************************************************************
+  
+  rm(list=ls(envir=parent.frame()), envir=parent.frame())
   
   return(residuals.new)
 }
