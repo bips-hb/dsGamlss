@@ -156,6 +156,9 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
                                                          i.control = gamlss::glim.control(cc=c2[1], cyc=1, 
                                                                                   bf.cyc=1, bf.tol=c2[4])))
   
+  
+  base::assign("temp_mod.gamlss.ds", mod.gamlss.ds, env=parent.frame())
+  
   mu.x <- mod.gamlss.ds$mu.x
   sigma.x <- mod.gamlss.ds$sigma.x
   nu.x <- mod.gamlss.ds$nu.x
@@ -307,7 +310,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     } else{
       mu <- (y + global.mean)/2
     }
-    base::assign("mu", mu, env=parent.frame())
+    base::assign("temp_mu", mu, env=parent.frame())
   }
   
   if("sigma" %in% names(family$parameters)){
@@ -331,7 +334,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
         eval(family$sigma.initial, envir=environment())
       }
     }
-    base::assign("sigma", sigma, env=parent.frame())
+    base::assign("temp_sigma", sigma, env=parent.frame())
   }
   
   if("nu" %in% names(family$parameters)){
@@ -347,7 +350,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     } else{
       eval(family$nu.initial, envir=environment())
     }
-    base::assign("nu", nu, env=parent.frame())
+    base::assign("temp_nu", nu, env=parent.frame())
   }
   
   if("tau" %in% names(family$parameters)){
@@ -363,25 +366,25 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     } else{
       eval(family$tau.initial, envir=environment())
     }
-    base::assign("tau", tau, env=parent.frame())
+    base::assign("temp_tau", tau, env=parent.frame())
   }
   
   ## Initialize & save the matrix with the smoothing fitted values on the server-side
   # since they might be disclosive they cannot be returned to the client
   if (!is.null(mod.gamlss.ds$mu.coefSmo)){
-    base::assign("mu.s", matrix(0, mod.gamlss.ds$N, length(mod.gamlss.ds$mu.coefSmo)), env=parent.frame())
+    base::assign("temp_mu.s", matrix(0, mod.gamlss.ds$N, length(mod.gamlss.ds$mu.coefSmo)), env=parent.frame())
   }
   
   if (!is.null(mod.gamlss.ds$sigma.coefSmo)){
-    base::assign("sigma.s", matrix(0, mod.gamlss.ds$N, length(mod.gamlss.ds$sigma.coefSmo)), env=parent.frame())
+    base::assign("temp_sigma.s", matrix(0, mod.gamlss.ds$N, length(mod.gamlss.ds$sigma.coefSmo)), env=parent.frame())
   }
   
   if (!is.null(mod.gamlss.ds$nu.coefSmo)){
-    base::assign("nu.s", matrix(0, mod.gamlss.ds$N, length(mod.gamlss.ds$nu.coefSmo)), env=parent.frame())
+    base::assign("temp_nu.s", matrix(0, mod.gamlss.ds$N, length(mod.gamlss.ds$nu.coefSmo)), env=parent.frame())
   }
   
   if (!is.null(mod.gamlss.ds$tau.coefSmo)){
-    base::assign("tau.s", matrix(0, mod.gamlss.ds$N, length(mod.gamlss.ds$tau.coefSmo)), env=parent.frame())
+    base::assign("temp_tau.s", matrix(0, mod.gamlss.ds$N, length(mod.gamlss.ds$tau.coefSmo)), env=parent.frame())
   }
 
   ## Initialize deviance

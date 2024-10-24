@@ -174,20 +174,8 @@ gamlssDS3 <- function(parameter = parameter, smoother = smoother, formula = form
   # II) Calculate matrix & vector to return to client ----  
   #**************************************************************************
   
-  #*A) Fit the model ----
-  # Now fit model specified in formula:
-  # to increase computational speed the number of inner and backfitting iterations are set to 1
-  # suppressWarnings to avoid the warning that the algorithm has not yet converged
-  mod.gamlss.ds <- base::suppressWarnings(gamlss::gamlss(formula=formula2use, sigma.formula=sigma.formula2use, 
-                                                        nu.formula=nu.formula2use, tau.formula=tau.formula2use,
-                                                        family=family, data=data, mu.fix=mu.fix, 
-                                                        sigma.fix=sigma.fix, nu.fix=nu.fix, tau.fix=tau.fix,
-                                                        control=gamlss::gamlss.control(c.crit=c1[1], n.cyc=1, 
-                                                                               mu.step=c1[3], sigma.step=c1[4], 
-                                                                               nu.step=c1[5], tau.step=c1[6],
-                                                                               gd.tol=c1[7], trace=FALSE),
-                                                        i.control=gamlss::glim.control(cc=c2[1], cyc=1, 
-                                                                               bf.cyc=1, bf.tol=c2[4])))
+  #*A) Get fitted model ----
+  mod.gamlss.ds <- base::get("temp_mod.gamlss.ds", env=parent.frame())
   
   ## get design matrix for the parameter
   X.mat <- as.matrix(eval(parse(text=paste("mod.gamlss.ds$", parameter, ".x", sep="")), envir=environment()))
@@ -231,22 +219,22 @@ gamlssDS3 <- function(parameter = parameter, smoother = smoother, formula = form
   ## Get fitted values for all distribution parameters
   # necessary for all parameters to calculate deviance
   if("mu" %in% names(family$parameters)){
-    mu <- base::get("mu", env=parent.frame())
+    mu <- base::get("temp_mu", env=parent.frame())
   }
   if("sigma" %in% names(family$parameters)){
-    sigma <- base::get("sigma", env=parent.frame())
+    sigma <- base::get("temp_sigma", env=parent.frame())
   }
   if("nu" %in% names(family$parameters)){
-    nu <- base::get("nu", env=parent.frame())
+    nu <- base::get("temp_nu", env=parent.frame())
   }
   if("tau" %in% names(family$parameters)){
-    tau <- base::get("tau", env=parent.frame())
+    tau <- base::get("temp_tau", env=parent.frame())
   }
   
   ## Calculate smoothing fitted value matrix s
   gamma.start <- 1
   coefSmo <- eval(parse(text=paste("mod.gamlss.ds$", parameter, ".coefSmo", sep="")), envir=environment())
-  s.old <- base::get(paste(parameter, ".s", sep=""), env=parent.frame())
+  s.old <- base::get(paste("temp_", parameter, ".s", sep=""), env=parent.frame())
   # get the gamma vectors for the respective parameter & multiply them with the matrices
   for (i in 1:length(coefSmo)){
     gamma.length <- dim(coefSmo[[i]]$coef)[1]
@@ -262,7 +250,7 @@ gamlssDS3 <- function(parameter = parameter, smoother = smoother, formula = form
   # update smoothing fitted value matrix for previous smoother
   if (smoother>1){
     s[,(smoother-1)] <- s.update
-    base::assign(paste(parameter, ".s", sep=""), s, env=parent.frame())
+    base::assign(paste("temp_", parameter, ".s", sep=""), s, env=parent.frame())
   }
   
   #*B) Update vectors----

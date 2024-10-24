@@ -135,19 +135,8 @@ gamlssDS7 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   # II) Get the outcome ----  
   #**************************************************************************
   
-  #*A) Fit the model ----
-  # Now fit model specified in formula:
-  # to increase computational speed the number of inner and backfitting iterations are set to 1
-  mod.gamlss.ds <- base::suppressWarnings(gamlss::gamlss(formula=formula2use, sigma.formula=sigma.formula2use, 
-                                                         nu.formula=nu.formula2use, tau.formula=tau.formula2use,
-                                                         family=family, data=data, mu.fix=mu.fix, 
-                                                         sigma.fix=sigma.fix, nu.fix=nu.fix, tau.fix=tau.fix,
-                                                         control = gamlss::gamlss.control(c.crit=c1[1], n.cyc=1, 
-                                                                                  mu.step=c1[3], sigma.step=c1[4], 
-                                                                                  nu.step=c1[5], tau.step=c1[6],
-                                                                                  gd.tol=c1[7], trace=FALSE),
-                                                         i.control = gamlss::glim.control(cc=c2[1], cyc=1, 
-                                                                                  bf.cyc=1, bf.tol=c2[4])))
+  #*A) Get fitted model ----
+  mod.gamlss.ds <- base::get("temp_mod.gamlss.ds", env=parent.frame())
   
   ## get outcome
   y <- as.vector(mod.gamlss.ds$y)
@@ -155,16 +144,16 @@ gamlssDS7 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   ## Get fitted values for all distribution parameters
   # necessary for all parameters to calculate deviance
   if("mu" %in% names(family$parameters)){
-    mu <- base::get("mu", env=parent.frame())
+    mu <- base::get("temp_mu", env=parent.frame())
   }
   if("sigma" %in% names(family$parameters)){
-    sigma <- base::get("sigma", env=parent.frame())
+    sigma <- base::get("temp_sigma", env=parent.frame())
   }
   if("nu" %in% names(family$parameters)){
-    nu <- base::get("nu", env=parent.frame())
+    nu <- base::get("temp_nu", env=parent.frame())
   }
   if("tau" %in% names(family$parameters)){
-    tau <- base::get("tau", env=parent.frame())
+    tau <- base::get("temp_tau", env=parent.frame())
   }
   
   #**************************************************************************
@@ -213,7 +202,8 @@ gamlssDS7 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   # in the parent.frame() environment
   #**************************************************************************
   
-  rm(list=ls(envir=parent.frame()), envir=parent.frame())
+  # delete temporary variables (prefix temp_) will be deleted
+  rm(list=ls(pattern="^temp_", envir=parent.frame()), envir=parent.frame())
   
   return(residuals.new)
 }
