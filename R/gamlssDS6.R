@@ -216,7 +216,7 @@ gamlssDS6 <- function(parameter = parameter, formula = formula,
       x <- eval(parse(text=name), envir=parent.frame())
       basismatrix <- bbase(x=x, xl=smoother.xl[which(smoother.names==name)], xr=smoother.xr[which(smoother.names==name)],
                            ndx=pb.control$inter, deg=pb.control$degree)
-      base::assign(paste("temp_Z", i, ".mat", sep=""), basismatrix, env=environment())
+      base::assign(paste("Z", i, ".mat", sep=""), basismatrix, env=environment())
     }
   }
   
