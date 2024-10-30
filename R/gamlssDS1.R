@@ -454,10 +454,18 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
       } else{
         warning(paste("The length of mu.coef.start does not match with the length of", dim(mu.x.start)[2], "that is implied by ", mu.x.start.source, ". 
                       Therefore, mu.coef.start is ignored and instead the default values are used for the initialization of mu.", sep=" "))
-        mu <- (y + global.mean)/2
+        if (familytext=="NO2()"){
+          mu <- eval(family$mu.initial, envir=environment())
+        } else {
+          mu <- (y + global.mean)/2
+        }
       }
     } else{
-      mu <- (y + global.mean)/2
+      if (familytext=="NO2()"){
+        mu <- eval(family$mu.initial, envir=environment())
+      } else {
+        mu <- (y + global.mean)/2
+      }
     }
     base::assign("temp_mu", mu, env=parent.frame())
   }
@@ -472,6 +480,8 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
                       Therefore, sigma.coef.start is ignored and instead the default values are used for the initialization of sigma.", sep=" "))
         if (familytext=="NO()"){
           sigma <- rep(global.sd, length(y))
+        } else if (familytext=="NO2()"){
+          sigma <- rep(global.sd^2, length(y))
         } else {
           eval(family$sigma.initial, envir=environment())
         }
@@ -479,6 +489,8 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     } else {
       if (familytext=="NO()"){
         sigma <- rep(global.sd, length(y))
+      } else if (familytext=="NO2()"){
+        sigma <- rep(global.sd^2, length(y))
       } else {
         eval(family$sigma.initial, envir=environment())
       }
