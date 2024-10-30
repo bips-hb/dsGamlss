@@ -23,10 +23,34 @@
 #' i.e. BI. Family functions can take arguments, as in BI(mu.link=probit).
 #' @param data an optional character string specifying a data.frame object holding 
 #' the data to be analysed under the specified model 
-#' @param mu.coef.start vector of initial values for the regression coefficients for mu
-#' @param sigma.coef.start vector of initial values for the regression coefficients for sigma
-#' @param nu.coef.start vector of initial values for the regression coefficients for nu
-#' @param tau.coef.start vector of initial values for the regression coefficients for tau
+#' @param mu.coef.start optional vector of regression coefficients to compute improved 
+#' start values for mu. Default NULL.
+#' @param sigma.coef.start optional vector of regression coefficients to compute improved
+#' start values for sigma. Default NULL.
+#' @param nu.coef.start optional vector of regression coefficients to compute improved
+#' start values for nu. Default NULL.
+#' @param tau.coef.start optional vector of regression coefficients to compute improved
+#' start values for tau. Default NULL.
+#' @param mu.coef.start.names vector with names for the regression coefficients in 
+#' \code{mu.coef.start}. These names are needed to obtain the design matrix to compute the
+#' improved start values for mu. If values are given in \code{mu.coef.start} but 
+#' \code{mu.coef.start.names} is NULL then the same formula as in \code{formula} is used to
+#' obtain the design matrix. Default NULL.
+#' @param sigma.coef.start.names vector with names for the regression coefficients in 
+#' \code{sigma.coef.start}. These names are needed to obtain the design matrix to compute the
+#' improved start values for sigma. If values are given in \code{sigma.coef.start} but 
+#' \code{sigma.coef.start.names} is NULL then the same formula as in \code{sigma.formula} 
+#' is used to obtain the design matrix. Default NULL.
+#' @param nu.coef.start.names vector with names for the regression coefficients in 
+#' \code{nu.coef.start}. These names are needed to obtain the design matrix to compute the
+#' improved start values for nu. If values are given in \code{nu.coef.start} but 
+#' \code{nu.coef.start.names} is NULL then the same formula as in \code{nu.formula} 
+#' is used to obtain the design matrix. Default NULL.
+#' @param tau.coef.start.names vector with names for the regression coefficients in 
+#' \code{tau.coef.start}. These names are needed to obtain the design matrix to compute the
+#' improved start values for tau. If values are given in \code{tau.coef.start} but 
+#' \code{tau.coef.start.names} is NULL then the same formula as in \code{tau.formula} 
+#' is used to obtain the design matrix. Default NULL.
 #' @param mu.fix logical, indicating whether the mu parameter should be kept fixed
 #' in the fitting processes.
 #' @param sigma.fix logical, indicating whether the sigma parameter should be kept
@@ -63,9 +87,11 @@
 #'
 
 gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formula = nu.formula,
-                     tau.formula = tau.formula, family = family, data=data, mu.coef.start=mu.coef.start, 
-                     sigma.coef.start=sigma.coef.start, nu.coef.start=nu.coef.start,
-                     tau.coef.start=tau.coef.start, mu.fix=mu.fix, sigma.fix = sigma.fix, 
+                     tau.formula = tau.formula, family = family, data = data, mu.coef.start = mu.coef.start, 
+                     sigma.coef.start = sigma.coef.start, nu.coef.start = nu.coef.start,
+                     tau.coef.start = tau.coef.start, mu.coef.start.names = mu.coef.start.names, 
+                     sigma.coef.start.names = sigma.coef.start.names, nu.coef.start.names = nu.coef.start.names,
+                     tau.coef.start.names = tau.coef.start.names, mu.fix=mu.fix, sigma.fix = sigma.fix, 
                      nu.fix = nu.fix, tau.fix = tau.fix, global.mean = global.mean, 
                      global.sd = global.sd, control = control, i.control = i.control){
   
@@ -97,6 +123,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   formulatext <- gsub("equal_symbol", "=", formulatext, fixed = TRUE)
   formulatext <- gsub("comma_symbol", ",", formulatext, fixed = TRUE)
   formulatext <- gsub("asterisk_symbol", "*", formulatext, fixed = TRUE)
+  formulatext <- gsub("caret_symbol", "^", formulatext, fixed = TRUE)
   formula <- stats::as.formula(formulatext)
   formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(formula))), env=parent.frame()) # here we need the formula as a 'call' object
   
@@ -106,6 +133,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   sigma.formulatext <- gsub("equal_symbol", "=", sigma.formulatext, fixed = TRUE)
   sigma.formulatext <- gsub("comma_symbol", ",", sigma.formulatext, fixed = TRUE)
   sigma.formulatext <- gsub("asterisk_symbol", "*", sigma.formulatext, fixed = TRUE)
+  sigma.formulatext <- gsub("caret_symbol", "^", sigma.formulatext, fixed = TRUE)
   sigma.formula <- stats::as.formula(sigma.formulatext)
   sigma.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(sigma.formula))), env=parent.frame()) # here we need the formula as a 'call' object
   
@@ -115,6 +143,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   nu.formulatext <- gsub("equal_symbol", "=", nu.formulatext, fixed = TRUE)
   nu.formulatext <- gsub("comma_symbol", ",", nu.formulatext, fixed = TRUE)
   nu.formulatext <- gsub("asterisk_symbol", "*", nu.formulatext, fixed = TRUE)
+  nu.formulatext <- gsub("caret_symbol", "^", nu.formulatext, fixed = TRUE)
   nu.formula <- stats::as.formula(nu.formulatext)
   nu.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(nu.formula))), env=parent.frame()) # here we need the formula as a 'call' object
   
@@ -124,6 +153,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   tau.formulatext <- gsub("equal_symbol", "=", tau.formulatext, fixed = TRUE)
   tau.formulatext <- gsub("comma_symbol", ",", tau.formulatext, fixed = TRUE)
   tau.formulatext <- gsub("asterisk_symbol", "*", tau.formulatext, fixed = TRUE)
+  tau.formulatext <- gsub("caret_symbol", "^", tau.formulatext, fixed = TRUE)
   tau.formula <- stats::as.formula(tau.formulatext)
   tau.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(tau.formula))), env=parent.frame()) # here we need the formula as a 'call' object
   
@@ -133,6 +163,38 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   family <- gsub("comma_symbol", ",", family, fixed = TRUE)
   familytext <- family
   family <- gamlss.dist::as.family(eval(parse(text=family), envir=environment()))
+  
+  if(!is.null(mu.coef.start.names)){
+    mu.coef.start.names <- gsub("left_parenthesis", "(", mu.coef.start.names, fixed = TRUE)
+    mu.coef.start.names <- gsub("right_parenthesis", ")", mu.coef.start.names, fixed = TRUE)
+    mu.coef.start.names <- gsub("asterisk_symbol", "*", mu.coef.start.names, fixed = TRUE)
+    mu.coef.start.names <- gsub("caret_symbol", "^", mu.coef.start.names, fixed = TRUE)
+    mu.coef.start.names <- unlist(strsplit(mu.coef.start.names, split=","))
+  }
+  
+  if(!is.null(sigma.coef.start.names)){
+    sigma.coef.start.names <- gsub("left_parenthesis", "(", sigma.coef.start.names, fixed = TRUE)
+    sigma.coef.start.names <- gsub("right_parenthesis", ")", sigma.coef.start.names, fixed = TRUE)
+    sigma.coef.start.names <- gsub("asterisk_symbol", "*", sigma.coef.start.names, fixed = TRUE)
+    sigma.coef.start.names <- gsub("caret_symbol", "^", sigma.coef.start.names, fixed = TRUE)
+    sigma.coef.start.names <- unlist(strsplit(sigma.coef.start.names, split=","))
+  }
+  
+  if(!is.null(nu.coef.start.names)){
+    nu.coef.start.names <- gsub("left_parenthesis", "(", nu.coef.start.names, fixed = TRUE)
+    nu.coef.start.names <- gsub("right_parenthesis", ")", nu.coef.start.names, fixed = TRUE)
+    nu.coef.start.names <- gsub("asterisk_symbol", "*", nu.coef.start.names, fixed = TRUE)
+    nu.coef.start.names <- gsub("caret_symbol", "^", nu.coef.start.names, fixed = TRUE)
+    nu.coef.start.names <- unlist(strsplit(nu.coef.start.names, split=","))
+  }
+  
+  if(!is.null(tau.coef.start.names)){
+    tau.coef.start.names <- gsub("left_parenthesis", "(", tau.coef.start.names, fixed = TRUE)
+    tau.coef.start.names <- gsub("right_parenthesis", ")", tau.coef.start.names, fixed = TRUE)
+    tau.coef.start.names <- gsub("asterisk_symbol", "*", tau.coef.start.names, fixed = TRUE)
+    tau.coef.start.names <- gsub("caret_symbol", "^", tau.coef.start.names, fixed = TRUE)
+    tau.coef.start.names <- unlist(strsplit(tau.coef.start.names, split=","))
+  }
   
   c1 <- as.numeric(unlist(strsplit(control, split=",")))
   c2 <- as.numeric(unlist(strsplit(i.control, split=",")))
@@ -290,20 +352,107 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   # Initialize the parameter vectors, smoothing fitted values & the deviance
   #**************************************************************************
 
-  ## Initialize & save the parameter vectors on the server-side
+  ### Initialize & save the parameter vectors on the server-side
   # since they might be disclosive they cannot be returned to the client
   mu <- NULL
   sigma <- NULL
   nu <- NULL
   tau <- NULL
   
+  ## Create the design matrix to compute the start values
+  if("mu" %in% names(family$parameters)){
+    if(!is.null(mu.coef.start.names)){
+      # Check for presence of any form of intercept in mu.coef.start.names
+      mu.include.intercept <- any(grepl("\\bintercept\\b", mu.coef.start.names, ignore.case = TRUE))
+      # Remove any form of "intercept" from the terms if it exists
+      mu.terms <- mu.coef.start.names[!grepl("\\bintercept\\b", mu.coef.start.names, ignore.case = TRUE)]
+      # Create the formula string based on the presence of intercept
+      if (mu.include.intercept==TRUE) {
+        mu.formula.start <- as.formula(paste("~", paste(mu.terms, collapse = " + ")))  # includes intercept by default
+      } else {
+        mu.formula.start <- as.formula(paste("~ 0 +", paste(mu.terms, collapse = " + ")))  # no intercept
+      }
+      # Generate the design matrix
+      mu.x.start <- model.matrix(mu.formula.start, data = dataTable)
+      mu.x.start.source <- "mu.coef.start.names"
+      
+    } else {
+      mu.x.start <- mu.x
+      mu.x.start.source <- "the formula for mu"
+    }
+  }
+  
+  if("sigma" %in% names(family$parameters)){
+    if(!is.null(sigma.coef.start.names)){
+      # Check for presence of any form of intercept in sigma.coef.start.names
+      sigma.include.intercept <- any(grepl("\\bintercept\\b", sigma.coef.start.names, ignore.case = TRUE))
+      # Remove any form of "intercept" from the terms if it exists
+      sigma.terms <- sigma.coef.start.names[!grepl("\\bintercept\\b", sigma.coef.start.names, ignore.case = TRUE)]
+      # Create the formula string based on the presence of intercept
+      if (sigma.include.intercept==TRUE) {
+        sigma.formula.start <- as.formula(paste("~", paste(sigma.terms, collapse = " + ")))  # includes intercept by default
+      } else {
+        sigma.formula.start <- as.formula(paste("~ 0 +", paste(sigma.terms, collapse = " + ")))  # no intercept
+      }
+      # Generate the design matrix
+      sigma.x.start <- model.matrix(sigma.formula.start, data = dataTable)
+      sigma.x.start.source <- "sigma.coef.start.names"
+    } else {
+      sigma.x.start <- sigma.x
+      sigma.x.start.source <- "the sigma.formula"
+    }
+  }
+  
+  if("nu" %in% names(family$parameters)){
+    if(!is.null(nu.coef.start.names)){
+      # Check for presence of any form of intercept in nu.coef.start.names
+      nu.include.intercept <- any(grepl("\\bintercept\\b", nu.coef.start.names, ignore.case = TRUE))
+      # Remove any form of "intercept" from the terms if it exists
+      nu.terms <- nu.coef.start.names[!grepl("\\bintercept\\b", nu.coef.start.names, ignore.case = TRUE)]
+      # Create the formula string based on the presence of intercept
+      if (nu.include.intercept==TRUE) {
+        nu.formula.start <- as.formula(paste("~", paste(nu.terms, collapse = " + ")))  # includes intercept by default
+      } else {
+        nu.formula.start <- as.formula(paste("~ 0 +", paste(nu.terms, collapse = " + ")))  # no intercept
+      }
+      # Generate the design matrix
+      nu.x.start <- model.matrix(nu.formula.start, data = dataTable)
+      nu.x.start.source <- "nu.coef.start.names"
+    } else {
+      nu.x.start <- nu.x
+      nu.x.start.source <- "the nu.formula"
+    }
+  }
+  
+  if("tau" %in% names(family$parameters)){
+    if(!is.null(tau.coef.start.names)){
+      # Check for presence of any form of intercept in tau.coef.start.names
+      tau.include.intercept <- any(grepl("\\bintercept\\b", tau.coef.start.names, ignore.case = TRUE))
+      # Remove any form of "intercept" from the terms if it exists
+      tau.terms <- tau.coef.start.names[!grepl("\\bintercept\\b", tau.coef.start.names, ignore.case = TRUE)]
+      # Create the formula string based on the presence of intercept
+      if (tau.include.intercept==TRUE) {
+        tau.formula.start <- as.formula(paste("~", paste(tau.terms, collapse = " + ")))  # includes intercept by default
+      } else {
+        tau.formula.start <- as.formula(paste("~ 0 +", paste(tau.terms, collapse = " + ")))  # no intercept
+      }
+      # Generate the design matrix
+      tau.x.start <- model.matrix(tau.formula.start, data = dataTable)
+      tau.x.start.source <- "tau.coef.start.names"
+    } else {
+      tau.x.start <- tau.x
+      tau.x.start.source <- "the tau.formula"
+    }
+  }
+  
+  ## compute start values for parameters
   if("mu" %in% names(family$parameters)){
     if(!is.null(mu.coef.start)){ 
-      if(length(mu.coef.start)==dim.mu.x[[2]]){
-        eta <- mu.x %*% mu.coef.start
+      if(length(mu.coef.start)==dim(mu.x.start)[2]){
+        eta <- mu.x.start %*% mu.coef.start
         mu <- as.vector(eval(parse(text="family$mu.linkinv(eta)"), envir=environment()))
       } else{
-        warning(paste("The length of mu.coef.start does not match with the length of", dim.mu.x[[2]], "that is implied by the mu.formula. 
+        warning(paste("The length of mu.coef.start does not match with the length of", dim(mu.x.start)[2], "that is implied by ", mu.x.start.source, ". 
                       Therefore, mu.coef.start is ignored and instead the default values are used for the initialization of mu.", sep=" "))
         mu <- (y + global.mean)/2
       }
@@ -315,11 +464,11 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   
   if("sigma" %in% names(family$parameters)){
     if(!is.null(sigma.coef.start)){
-      if(length(sigma.coef.start)==dim.sigma.x[[2]]){
-        eta <- sigma.x %*% sigma.coef.start
+      if(length(sigma.coef.start)==dim(sigma.x.start)[2]){
+        eta <- sigma.x.start %*% sigma.coef.start
         sigma <- as.vector(eval(parse(text="family$sigma.linkinv(eta)"), envir=environment()))
       } else{
-        warning(paste("The length of sigma.coef.start does not match with the length of", dim.sigma.x[[2]], "that is implied by the sigma.formula. 
+        warning(paste("The length of sigma.coef.start does not match with the length of", dim(sigma.x.start)[2], "that is implied by ", sigma.x.start.source, ". 
                       Therefore, sigma.coef.start is ignored and instead the default values are used for the initialization of sigma.", sep=" "))
         if (familytext=="NO()"){
           sigma <- rep(global.sd, length(y))
@@ -339,11 +488,11 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   
   if("nu" %in% names(family$parameters)){
     if(!is.null(nu.coef.start)){
-      if(length(nu.coef.start)==dim.nu.x[[2]]){
-        eta <- nu.x %*% nu.coef.start
+      if(length(nu.coef.start)==dim(nu.x.start)[2]){
+        eta <- nu.x.start %*% nu.coef.start
         nu <- as.vector(eval(parse(text="family$nu.linkinv(eta)"), envir=environment()))
       } else{
-        warning(paste("The length of nu.coef.start does not match with the length of", dim.nu.x[[2]], "that is implied by the nu.formula. 
+        warning(paste("The length of nu.coef.start does not match with the length of", dim(nu.x.start)[2], "that is implied by ", nu.x.start.source, ". 
                       Therefore, nu.coef.start is ignored and instead the default values are used for the initialization of nu.", sep=" "))
         eval(family$nu.initial, envir=environment())
       }
@@ -355,11 +504,11 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   
   if("tau" %in% names(family$parameters)){
     if(!is.null(tau.coef.start)){
-      if(length(tau.coef.start)==dim.tau.x[[2]]){
-        eta <- tau.x %*% tau.coef.start
+      if(length(tau.coef.start)==dim(tau.x.start)[2]){
+        eta <- tau.x.start %*% tau.coef.start
         tau <- as.vector(eval(parse(text="family$tau.linkinv(eta)"), envir=environment()))
       } else{
-        warning(paste("The length of tau.coef.start does not match with the length of", dim.tau.x[[2]], "that is implied by the tau.formula. 
+        warning(paste("The length of tau.coef.start does not match with the length of", dim(tau.x.start)[2], "that is implied by ", tau.x.start.source, ".
                       Therefore, tau.coef.start is ignored and instead the default values are used for the initialization of tau.", sep=" "))
         eval(family$tau.initial, envir=environment())
       }
