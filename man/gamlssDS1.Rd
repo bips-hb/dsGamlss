@@ -15,6 +15,10 @@ gamlssDS1(
   sigma.coef.start = sigma.coef.start,
   nu.coef.start = nu.coef.start,
   tau.coef.start = tau.coef.start,
+  mu.coef.start.names = mu.coef.start.names,
+  sigma.coef.start.names = sigma.coef.start.names,
+  nu.coef.start.names = nu.coef.start.names,
+  tau.coef.start.names = tau.coef.start.names,
   mu.fix = mu.fix,
   sigma.fix = sigma.fix,
   nu.fix = nu.fix,
@@ -50,13 +54,41 @@ i.e. BI. Family functions can take arguments, as in BI(mu.link=probit).}
 \item{data}{an optional character string specifying a data.frame object holding 
 the data to be analysed under the specified model}
 
-\item{mu.coef.start}{vector of initial values for the regression coefficients for mu}
+\item{mu.coef.start}{optional vector of regression coefficients to compute improved 
+start values for mu. Default NULL.}
 
-\item{sigma.coef.start}{vector of initial values for the regression coefficients for sigma}
+\item{sigma.coef.start}{optional vector of regression coefficients to compute improved
+start values for sigma. Default NULL.}
 
-\item{nu.coef.start}{vector of initial values for the regression coefficients for nu}
+\item{nu.coef.start}{optional vector of regression coefficients to compute improved
+start values for nu. Default NULL.}
 
-\item{tau.coef.start}{vector of initial values for the regression coefficients for tau}
+\item{tau.coef.start}{optional vector of regression coefficients to compute improved
+start values for tau. Default NULL.}
+
+\item{mu.coef.start.names}{vector with names for the regression coefficients in 
+\code{mu.coef.start}. These names are needed to obtain the design matrix to compute the
+improved start values for mu. If values are given in \code{mu.coef.start} but 
+\code{mu.coef.start.names} is NULL then the same formula as in \code{formula} is used to
+obtain the design matrix. Default NULL.}
+
+\item{sigma.coef.start.names}{vector with names for the regression coefficients in 
+\code{sigma.coef.start}. These names are needed to obtain the design matrix to compute the
+improved start values for sigma. If values are given in \code{sigma.coef.start} but 
+\code{sigma.coef.start.names} is NULL then the same formula as in \code{sigma.formula} 
+is used to obtain the design matrix. Default NULL.}
+
+\item{nu.coef.start.names}{vector with names for the regression coefficients in 
+\code{nu.coef.start}. These names are needed to obtain the design matrix to compute the
+improved start values for nu. If values are given in \code{nu.coef.start} but 
+\code{nu.coef.start.names} is NULL then the same formula as in \code{nu.formula} 
+is used to obtain the design matrix. Default NULL.}
+
+\item{tau.coef.start.names}{vector with names for the regression coefficients in 
+\code{tau.coef.start}. These names are needed to obtain the design matrix to compute the
+improved start values for tau. If values are given in \code{tau.coef.start} but 
+\code{tau.coef.start.names} is NULL then the same formula as in \code{tau.formula} 
+is used to obtain the design matrix. Default NULL.}
 
 \item{mu.fix}{logical, indicating whether the mu parameter should be kept fixed
 in the fitting processes.}
