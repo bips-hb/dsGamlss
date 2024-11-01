@@ -372,6 +372,8 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
       } else {
         mu.formula.start <- stats::as.formula(paste("~ 0 +", paste(mu.terms, collapse = " + ")))  # no intercept
       }
+      # Here we need the formula as a 'call' object
+      mu.formula.start <- stats::as.formula(paste0(Reduce(paste, deparse(mu.formula.start))), env=parent.frame())
       # Generate the design matrix
       mu.x.start <- stats::model.matrix(mu.formula.start, data = dataTable)
       mu.x.start.source <- "mu.coef.start.names"
@@ -394,6 +396,8 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
       } else {
         sigma.formula.start <- stats::as.formula(paste("~ 0 +", paste(sigma.terms, collapse = " + ")))  # no intercept
       }
+      # Here we need the formula as a 'call' object
+      sigma.formula.start <- stats::as.formula(paste0(Reduce(paste, deparse(sigma.formula.start))), env=parent.frame())
       # Generate the design matrix
       sigma.x.start <- stats::model.matrix(sigma.formula.start, data = dataTable)
       sigma.x.start.source <- "sigma.coef.start.names"
@@ -415,6 +419,8 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
       } else {
         nu.formula.start <- stats::as.formula(paste("~ 0 +", paste(nu.terms, collapse = " + ")))  # no intercept
       }
+      # Here we need the formula as a 'call' object
+      nu.formula.start <- stats::as.formula(paste0(Reduce(paste, deparse(nu.formula.start))), env=parent.frame())
       # Generate the design matrix
       nu.x.start <- stats::model.matrix(nu.formula.start, data = dataTable)
       nu.x.start.source <- "nu.coef.start.names"
@@ -436,6 +442,8 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
       } else {
         tau.formula.start <- stats::as.formula(paste("~ 0 +", paste(tau.terms, collapse = " + ")))  # no intercept
       }
+      # Here we need the formula as a 'call' object
+      sigma.formula.start <- stats::as.formula(paste0(Reduce(paste, deparse(sigma.formula.start))), env=parent.frame())
       # Generate the design matrix
       tau.x.start <- stats::model.matrix(tau.formula.start, data = dataTable)
       tau.x.start.source <- "tau.coef.start.names"
