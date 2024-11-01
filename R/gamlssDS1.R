@@ -368,12 +368,12 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
       mu.terms <- mu.coef.start.names[!grepl("\\bintercept\\b", mu.coef.start.names, ignore.case = TRUE)]
       # Create the formula string based on the presence of intercept
       if (mu.include.intercept==TRUE) {
-        mu.formula.start <- as.formula(paste("~", paste(mu.terms, collapse = " + ")))  # includes intercept by default
+        mu.formula.start <- stats::as.formula(paste("~", paste(mu.terms, collapse = " + ")))  # includes intercept by default
       } else {
-        mu.formula.start <- as.formula(paste("~ 0 +", paste(mu.terms, collapse = " + ")))  # no intercept
+        mu.formula.start <- stats::as.formula(paste("~ 0 +", paste(mu.terms, collapse = " + ")))  # no intercept
       }
       # Generate the design matrix
-      mu.x.start <- model.matrix(mu.formula.start, data = dataTable)
+      mu.x.start <- stats::model.matrix(mu.formula.start, data = dataTable)
       mu.x.start.source <- "mu.coef.start.names"
       
     } else {
@@ -390,12 +390,12 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
       sigma.terms <- sigma.coef.start.names[!grepl("\\bintercept\\b", sigma.coef.start.names, ignore.case = TRUE)]
       # Create the formula string based on the presence of intercept
       if (sigma.include.intercept==TRUE) {
-        sigma.formula.start <- as.formula(paste("~", paste(sigma.terms, collapse = " + ")))  # includes intercept by default
+        sigma.formula.start <- stats::as.formula(paste("~", paste(sigma.terms, collapse = " + ")))  # includes intercept by default
       } else {
-        sigma.formula.start <- as.formula(paste("~ 0 +", paste(sigma.terms, collapse = " + ")))  # no intercept
+        sigma.formula.start <- stats::as.formula(paste("~ 0 +", paste(sigma.terms, collapse = " + ")))  # no intercept
       }
       # Generate the design matrix
-      sigma.x.start <- model.matrix(sigma.formula.start, data = dataTable)
+      sigma.x.start <- stats::model.matrix(sigma.formula.start, data = dataTable)
       sigma.x.start.source <- "sigma.coef.start.names"
     } else {
       sigma.x.start <- sigma.x
@@ -411,12 +411,12 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
       nu.terms <- nu.coef.start.names[!grepl("\\bintercept\\b", nu.coef.start.names, ignore.case = TRUE)]
       # Create the formula string based on the presence of intercept
       if (nu.include.intercept==TRUE) {
-        nu.formula.start <- as.formula(paste("~", paste(nu.terms, collapse = " + ")))  # includes intercept by default
+        nu.formula.start <- stats::as.formula(paste("~", paste(nu.terms, collapse = " + ")))  # includes intercept by default
       } else {
-        nu.formula.start <- as.formula(paste("~ 0 +", paste(nu.terms, collapse = " + ")))  # no intercept
+        nu.formula.start <- stats::as.formula(paste("~ 0 +", paste(nu.terms, collapse = " + ")))  # no intercept
       }
       # Generate the design matrix
-      nu.x.start <- model.matrix(nu.formula.start, data = dataTable)
+      nu.x.start <- stats::model.matrix(nu.formula.start, data = dataTable)
       nu.x.start.source <- "nu.coef.start.names"
     } else {
       nu.x.start <- nu.x
@@ -432,12 +432,12 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
       tau.terms <- tau.coef.start.names[!grepl("\\bintercept\\b", tau.coef.start.names, ignore.case = TRUE)]
       # Create the formula string based on the presence of intercept
       if (tau.include.intercept==TRUE) {
-        tau.formula.start <- as.formula(paste("~", paste(tau.terms, collapse = " + ")))  # includes intercept by default
+        tau.formula.start <- stats::as.formula(paste("~", paste(tau.terms, collapse = " + ")))  # includes intercept by default
       } else {
-        tau.formula.start <- as.formula(paste("~ 0 +", paste(tau.terms, collapse = " + ")))  # no intercept
+        tau.formula.start <- stats::as.formula(paste("~ 0 +", paste(tau.terms, collapse = " + ")))  # no intercept
       }
       # Generate the design matrix
-      tau.x.start <- model.matrix(tau.formula.start, data = dataTable)
+      tau.x.start <- stats::model.matrix(tau.formula.start, data = dataTable)
       tau.x.start.source <- "tau.coef.start.names"
     } else {
       tau.x.start <- tau.x
