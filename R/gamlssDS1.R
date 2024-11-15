@@ -368,7 +368,12 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
       mu.terms <- mu.coef.start.names[!grepl("\\bintercept\\b", mu.coef.start.names, ignore.case = TRUE)]
       # Create the formula string based on the presence of intercept
       if (mu.include.intercept==TRUE) {
-        mu.formula.start <- stats::as.formula(paste("~", paste(mu.terms, collapse = " + ")))  # includes intercept by default
+        if (length(mu.terms) > 0){
+          mu.formula.start <- stats::as.formula(paste("~", paste(mu.terms, collapse = " + ")))  # includes intercept by default
+        } else {
+          # only intercept
+          mu.formula.start <- stats::as.formula("~ 1")
+        }
       } else {
         mu.formula.start <- stats::as.formula(paste("~ 0 +", paste(mu.terms, collapse = " + ")))  # no intercept
       }
@@ -392,7 +397,12 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
       sigma.terms <- sigma.coef.start.names[!grepl("\\bintercept\\b", sigma.coef.start.names, ignore.case = TRUE)]
       # Create the formula string based on the presence of intercept
       if (sigma.include.intercept==TRUE) {
-        sigma.formula.start <- stats::as.formula(paste("~", paste(sigma.terms, collapse = " + ")))  # includes intercept by default
+        if (length(sigma.terms) > 0){
+          sigma.formula.start <- stats::as.formula(paste("~", paste(sigma.terms, collapse = " + ")))  # includes intercept by default
+        } else {
+          # only intercept
+          sigma.formula.start <- stats::as.formula("~ 1")
+        }
       } else {
         sigma.formula.start <- stats::as.formula(paste("~ 0 +", paste(sigma.terms, collapse = " + ")))  # no intercept
       }
@@ -415,7 +425,12 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
       nu.terms <- nu.coef.start.names[!grepl("\\bintercept\\b", nu.coef.start.names, ignore.case = TRUE)]
       # Create the formula string based on the presence of intercept
       if (nu.include.intercept==TRUE) {
-        nu.formula.start <- stats::as.formula(paste("~", paste(nu.terms, collapse = " + ")))  # includes intercept by default
+        if (length(nu.terms) > 0){
+          nu.formula.start <- stats::as.formula(paste("~", paste(nu.terms, collapse = " + ")))  # includes intercept by default
+        } else {
+          # only intercept
+          nu.formula.start <- stats::as.formula("~ 1")
+        }
       } else {
         nu.formula.start <- stats::as.formula(paste("~ 0 +", paste(nu.terms, collapse = " + ")))  # no intercept
       }
@@ -438,7 +453,12 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
       tau.terms <- tau.coef.start.names[!grepl("\\bintercept\\b", tau.coef.start.names, ignore.case = TRUE)]
       # Create the formula string based on the presence of intercept
       if (tau.include.intercept==TRUE) {
-        tau.formula.start <- stats::as.formula(paste("~", paste(tau.terms, collapse = " + ")))  # includes intercept by default
+        if (length(tau.terms) > 0){
+          tau.formula.start <- stats::as.formula(paste("~", paste(tau.terms, collapse = " + ")))  # includes intercept by default
+        } else {
+          # only intercept
+          tau.formula.start <- stats::as.formula("~ 1")
+        }
       } else {
         tau.formula.start <- stats::as.formula(paste("~ 0 +", paste(tau.terms, collapse = " + ")))  # no intercept
       }
