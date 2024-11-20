@@ -51,6 +51,7 @@
 #' @return anonymized normalized quantile residuals for the gamlss model fitted with 
 #' ds.gamlss. 
 #' @author Annika Swenne
+#' @import gamlss
 #' @import gamlss.dist
 #' @export
 
@@ -89,6 +90,8 @@ gamlssDS7 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   formulatext <- gsub("equal_symbol", "=", formulatext, fixed = TRUE)
   formulatext <- gsub("comma_symbol", ",", formulatext, fixed = TRUE)
   formulatext <- gsub("asterisk_symbol", "*", formulatext, fixed = TRUE)
+  # make reference to gamlss::pb() explicit
+  formulatext <- gsub("pb(", "gamlss::pb(", formulatext, fixed = TRUE)
   formula <- stats::as.formula(formulatext)
   formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(formula))), env=parent.frame()) # here we need the formula as a 'call' object
   
@@ -98,6 +101,8 @@ gamlssDS7 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   sigma.formulatext <- gsub("equal_symbol", "=", sigma.formulatext, fixed = TRUE)
   sigma.formulatext <- gsub("comma_symbol", ",", sigma.formulatext, fixed = TRUE)
   sigma.formulatext <- gsub("asterisk_symbol", "*", sigma.formulatext, fixed = TRUE)
+  # make reference to gamlss::pb() explicit
+  sigma.formulatext <- gsub("pb(", "gamlss::pb(", sigma.formulatext, fixed = TRUE)
   sigma.formula <- stats::as.formula(sigma.formulatext)
   sigma.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(sigma.formula))), env=parent.frame()) # here we need the formula as a 'call' object
   
@@ -107,6 +112,8 @@ gamlssDS7 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   nu.formulatext <- gsub("equal_symbol", "=", nu.formulatext, fixed = TRUE)
   nu.formulatext <- gsub("comma_symbol", ",", nu.formulatext, fixed = TRUE)
   nu.formulatext <- gsub("asterisk_symbol", "*", nu.formulatext, fixed = TRUE)
+  # make reference to gamlss::pb() explicit
+  nu.formulatext <- gsub("pb(", "gamlss::pb(", nu.formulatext, fixed = TRUE)
   nu.formula <- stats::as.formula(nu.formulatext)
   nu.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(nu.formula))), env=parent.frame()) # here we need the formula as a 'call' object
   
@@ -116,6 +123,8 @@ gamlssDS7 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   tau.formulatext <- gsub("equal_symbol", "=", tau.formulatext, fixed = TRUE)
   tau.formulatext <- gsub("comma_symbol", ",", tau.formulatext, fixed = TRUE)
   tau.formulatext <- gsub("asterisk_symbol", "*", tau.formulatext, fixed = TRUE)
+  # make reference to gamlss::pb() explicit
+  tau.formulatext <- gsub("pb(", "gamlss::pb(", tau.formulatext, fixed = TRUE)
   tau.formula <- stats::as.formula(tau.formulatext)
   tau.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(tau.formula))), env=parent.frame()) # here we need the formula as a 'call' object
   
