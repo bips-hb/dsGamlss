@@ -232,8 +232,16 @@ gamlssDS6 <- function(parameter = parameter, formula = formula,
   gamma.vect <- eval(parse(text=paste(parameter, ".gamma.vect", sep="")), envir=environment())
   
   # Convert knot boundaries from transmittable (character) format to numeric
-  smoother.xl <- as.numeric(unlist(strsplit(smoother.xl, split=",")))
-  smoother.xr <- as.numeric(unlist(strsplit(smoother.xr, split=",")))
+  if (!(is.null(smoother.xl))){
+    smoother.xl <- as.numeric(unlist(strsplit(smoother.xl, split=",")))
+  } else {
+    smoother.xl <- NULL
+  }
+  if (!(is.null(smoother.xr))){
+    smoother.xr <- as.numeric(unlist(strsplit(smoother.xr, split=",")))
+  } else {
+    smoother.xr <- NULL
+  }
   
   #**************************************************************************
   # II) Update distribution parameter vector ----  
