@@ -118,6 +118,10 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     dataTable <- eval(parse(text=data), envir=parent.frame())
   }
   
+  # Create an environment with parent.frame() and gamlss namespace as its parents
+  combined_env <- new.env(parent = asNamespace("gamlss"))
+  parent.env(combined_env) <- parent.frame()
+  
   ## Reconvert the special symbols to create the appropriate formula & gamlss.family objects
   formulatext <- gsub("left_parenthesis", "(", formula, fixed = TRUE)
   formulatext <- gsub("right_parenthesis", ")", formulatext, fixed = TRUE)
@@ -126,8 +130,8 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   formulatext <- gsub("comma_symbol", ",", formulatext, fixed = TRUE)
   formulatext <- gsub("asterisk_symbol", "*", formulatext, fixed = TRUE)
   formulatext <- gsub("caret_symbol", "^", formulatext, fixed = TRUE)
-  formula <- stats::as.formula(formulatext, env=asNamespace("gamlss"))
-  formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(formula))), env=parent.frame()) # here we need the formula as a 'call' object
+  formula <- stats::as.formula(formulatext, env=combined_env)
+  formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(formula))), env=combined_env) # here we need the formula as a 'call' object
   
   sigma.formulatext <- gsub("left_parenthesis", "(", sigma.formula, fixed = TRUE)
   sigma.formulatext <- gsub("right_parenthesis", ")", sigma.formulatext, fixed = TRUE)
@@ -136,8 +140,8 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   sigma.formulatext <- gsub("comma_symbol", ",", sigma.formulatext, fixed = TRUE)
   sigma.formulatext <- gsub("asterisk_symbol", "*", sigma.formulatext, fixed = TRUE)
   sigma.formulatext <- gsub("caret_symbol", "^", sigma.formulatext, fixed = TRUE)
-  sigma.formula <- stats::as.formula(sigma.formulatext, env=asNamespace("gamlss"))
-  sigma.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(sigma.formula))), env=parent.frame()) # here we need the formula as a 'call' object
+  sigma.formula <- stats::as.formula(sigma.formulatext, env=combined_env)
+  sigma.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(sigma.formula))), env=combined_env) # here we need the formula as a 'call' object
   
   nu.formulatext <- gsub("left_parenthesis", "(", nu.formula, fixed = TRUE)
   nu.formulatext <- gsub("right_parenthesis", ")", nu.formulatext, fixed = TRUE)
@@ -146,8 +150,8 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   nu.formulatext <- gsub("comma_symbol", ",", nu.formulatext, fixed = TRUE)
   nu.formulatext <- gsub("asterisk_symbol", "*", nu.formulatext, fixed = TRUE)
   nu.formulatext <- gsub("caret_symbol", "^", nu.formulatext, fixed = TRUE)
-  nu.formula <- stats::as.formula(nu.formulatext, env=asNamespace("gamlss"))
-  nu.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(nu.formula))), env=parent.frame()) # here we need the formula as a 'call' object
+  nu.formula <- stats::as.formula(nu.formulatext, env=combined_env)
+  nu.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(nu.formula))), env=combined_env) # here we need the formula as a 'call' object
   
   tau.formulatext <- gsub("left_parenthesis", "(", tau.formula, fixed = TRUE)
   tau.formulatext <- gsub("right_parenthesis", ")", tau.formulatext, fixed = TRUE)
@@ -156,8 +160,8 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   tau.formulatext <- gsub("comma_symbol", ",", tau.formulatext, fixed = TRUE)
   tau.formulatext <- gsub("asterisk_symbol", "*", tau.formulatext, fixed = TRUE)
   tau.formulatext <- gsub("caret_symbol", "^", tau.formulatext, fixed = TRUE)
-  tau.formula <- stats::as.formula(tau.formulatext, env=asNamespace("gamlss"))
-  tau.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(tau.formula))), env=parent.frame()) # here we need the formula as a 'call' object
+  tau.formula <- stats::as.formula(tau.formulatext, env=combined_env)
+  tau.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(tau.formula))), env=combined_env) # here we need the formula as a 'call' object
   
   family <- gsub("left_parenthesis", "(", family, fixed = TRUE)
   family <- gsub("right_parenthesis", ")", family, fixed = TRUE)
@@ -205,8 +209,6 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   # II) First outer iteration of gamlss ---- 
   # To get the desired matrices and vectors (and their dimensions)
   #**************************************************************************
-
-  message("Problem in gamlss")
   
   # to increase computational speed the number of inner and backfitting iterations are set to 1
   # suppressWarnings to avoid the warning that the algorithm has not yet converged
