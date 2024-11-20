@@ -152,10 +152,30 @@ gamlssDS2 <- function(parameter = parameter, formula = formula, sigma.formula = 
   c2 <- as.numeric(unlist(strsplit(i.control, split=",")))
   
   # Convert parameter vectors from transmittable (character) format to numeric 
-  mu.beta.vect <- as.numeric(unlist(strsplit(mu.beta.vect, split=",")))
-  sigma.beta.vect <- as.numeric(unlist(strsplit(sigma.beta.vect, split=",")))
-  nu.beta.vect <- as.numeric(unlist(strsplit(nu.beta.vect, split=",")))
-  tau.beta.vect <- as.numeric(unlist(strsplit(tau.beta.vect, split=",")))
+  if (!(is.null(mu.beta.vect))){
+    mu.beta.vect <- as.numeric(unlist(strsplit(mu.beta.vect, split=",")))
+  } else {
+    mu.beta.vect <- NULL
+  }
+  
+  if (!(is.null(sigma.beta.vect))){
+    sigma.beta.vect <- as.numeric(unlist(strsplit(sigma.beta.vect, split=",")))
+  } else {
+    sigma.beta.vect <- NULL
+  }
+  
+  if (!(is.null(nu.beta.vect))){
+    nu.beta.vect <- as.numeric(unlist(strsplit(nu.beta.vect, split=",")))
+  } else {
+    nu.beta.vect <- NULL
+  }
+  
+  if (!(is.null(tau.beta.vect))){
+    tau.beta.vect <- as.numeric(unlist(strsplit(tau.beta.vect, split=",")))
+  } else {
+    tau.beta.vect <- NULL
+  }
+  
   # get the beta and gammma vectors for the respective parameter
   beta.vect <- eval(parse(text=paste(parameter, ".beta.vect", sep="")), envir=environment())
   

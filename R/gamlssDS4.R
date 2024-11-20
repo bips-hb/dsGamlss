@@ -164,14 +164,56 @@ gamlssDS4 <- function(parameter = parameter, smoother = smoother, formula = form
   c2 <- as.numeric(unlist(strsplit(i.control, split=",")))
   
   # Convert parameter vectors from transmittable (character) format to numeric 
-  mu.beta.vect <- as.numeric(unlist(strsplit(mu.beta.vect, split=",")))
-  sigma.beta.vect <- as.numeric(unlist(strsplit(sigma.beta.vect, split=",")))
-  nu.beta.vect <- as.numeric(unlist(strsplit(nu.beta.vect, split=",")))
-  tau.beta.vect <- as.numeric(unlist(strsplit(tau.beta.vect, split=",")))
-  mu.gamma.vect <- as.numeric(unlist(strsplit(mu.gamma.vect, split=",")))
-  sigma.gamma.vect <- as.numeric(unlist(strsplit(sigma.gamma.vect, split=",")))
-  nu.gamma.vect <- as.numeric(unlist(strsplit(nu.gamma.vect, split=",")))
-  tau.gamma.vect <- as.numeric(unlist(strsplit(tau.gamma.vect, split=",")))
+  # beta
+  if (!(is.null(mu.beta.vect))){
+    mu.beta.vect <- as.numeric(unlist(strsplit(mu.beta.vect, split=",")))
+  } else {
+    mu.beta.vect <- NULL
+  }
+  
+  if (!(is.null(sigma.beta.vect))){
+    sigma.beta.vect <- as.numeric(unlist(strsplit(sigma.beta.vect, split=",")))
+  } else {
+    sigma.beta.vect <- NULL
+  }
+  
+  if (!(is.null(nu.beta.vect))){
+    nu.beta.vect <- as.numeric(unlist(strsplit(nu.beta.vect, split=",")))
+  } else {
+    nu.beta.vect <- NULL
+  }
+  
+  if (!(is.null(tau.beta.vect))){
+    tau.beta.vect <- as.numeric(unlist(strsplit(tau.beta.vect, split=",")))
+  } else {
+    tau.beta.vect <- NULL
+  }
+  
+  #gamma
+  if (!(is.null(mu.gamma.vect))){
+    mu.gamma.vect <- as.numeric(unlist(strsplit(mu.gamma.vect, split=",")))
+  } else {
+    mu.gamma.vect <- NULL
+  }
+  
+  if (!(is.null(sigma.gamma.vect))){
+    sigma.gamma.vect <- as.numeric(unlist(strsplit(sigma.gamma.vect, split=",")))
+  } else {
+    sigma.gamma.vect <- NULL
+  }
+  
+  if (!(is.null(nu.gamma.vect))){
+    nu.gamma.vect <- as.numeric(unlist(strsplit(nu.gamma.vect, split=",")))
+  } else {
+    nu.gamma.vect <- NULL
+  }
+  
+  if (!(is.null(tau.gamma.vect))){
+    tau.gamma.vect <- as.numeric(unlist(strsplit(tau.gamma.vect, split=",")))
+  } else {
+    tau.gamma.vect <- NULL
+  }
+  
   # get the beta and gammma vectors for the respective parameter
   beta.vect <- eval(parse(text=paste(parameter, ".beta.vect", sep="")), envir=environment())
   gamma.vect <- eval(parse(text=paste(parameter, ".gamma.vect", sep="")), envir=environment())
