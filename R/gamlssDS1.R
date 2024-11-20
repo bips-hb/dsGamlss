@@ -206,6 +206,8 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   # To get the desired matrices and vectors (and their dimensions)
   #**************************************************************************
 
+  message("Problem in gamlss")
+  
   # to increase computational speed the number of inner and backfitting iterations are set to 1
   # suppressWarnings to avoid the warning that the algorithm has not yet converged
   mod.gamlss.ds <- base::suppressWarnings(gamlss::gamlss(formula=formula2use, sigma.formula=sigma.formula2use, 
