@@ -83,6 +83,8 @@
 #' residuals (the normalised quantile residuals of the model) are not disclosed to 
 #' the client-side.
 #' @author Annika Swenne
+#' @import gamlss
+#' @import gamlss.dist
 #' @export
 #'
 

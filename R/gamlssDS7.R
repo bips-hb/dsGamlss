@@ -51,6 +51,7 @@
 #' @return anonymized normalized quantile residuals for the gamlss model fitted with 
 #' ds.gamlss. 
 #' @author Annika Swenne
+#' @import gamlss.dist
 #' @export
 
 gamlssDS7 <- function(formula = formula, sigma.formula = sigma.formula, nu.formula = nu.formula,
