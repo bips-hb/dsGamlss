@@ -8,17 +8,6 @@
 #' @param parameter a string specifing for which of the model parameters "mu", "sigma", "nu"
 #' or "tau" the model fitting should be performed
 #' @param smoother an integer indicating the number of the smoother that should be fitted
-#' @param formula a formula object, with the response on the left of an ~ operator, 
-#' and the terms, separated by + operators, on the right. Nonparametric smoothing
-#' terms are indicated by pb() for penalised beta splines, cs for smoothing splines, 
-#' lo for loess smooth terms and random or ra for random terms, 
-#' e.g. y~cs(x,df=5)+x1+x2*x3. 
-#' @param sigma.formula a formula object for fitting a model to the sigma parameter,
-#' as in the formula above, e.g. sigma.formula=~cs(x,df=5).
-#' @param nu.formula a formula object for fitting a model to the nu parameter, 
-#' e.g. nu.formula=~x
-#' @param tau.formula a formula object for fitting a model to the tau parameter, 
-#' e.g. tau.formula=~cs(x,df=2)
 #' @param family a gamlss.family object, which is used to define the distribution 
 #' and the link functions of the various parameters. The distribution families 
 #' supported by gamlss() can be found in gamlss.family. Functions such as BI() 
@@ -75,14 +64,11 @@
 #' residuals (the normalised quantile residuals of the model) are not disclosed to 
 #' the client-side.
 #' @author Annika Swenne
-#' @import gamlss
 #' @import gamlss.dist
 #' @export
 #'
 
-gamlssDS3 <- function(parameter = parameter, smoother = smoother, formula = formula, 
-                      sigma.formula = sigma.formula, nu.formula = nu.formula, 
-                      tau.formula = tau.formula, family = family, data = data, 
+gamlssDS3 <- function(parameter = parameter, smoother = smoother, family = family, data = data, 
                       mu.fix = mu.fix, sigma.fix = sigma.fix, nu.fix = nu.fix, 
                       tau.fix = tau.fix,
                       mu.beta.vect = mu.beta.vect, sigma.beta.vect = sigma.beta.vect,
@@ -108,43 +94,6 @@ gamlssDS3 <- function(parameter = parameter, smoother = smoother, formula = form
     data <- eval(parse(text=dataname), envir=parent.frame())
   }
   Ntotal <- dim(data)[1]
-  
-  ## Reconvert the special symbols to create the appropriate formula, gamlss.family objects, beta & gamma vectors
-  formulatext <- gsub("left_parenthesis", "(", formula, fixed = TRUE)
-  formulatext <- gsub("right_parenthesis", ")", formulatext, fixed = TRUE)
-  formulatext <- gsub("tilde_symbol", "~", formulatext, fixed = TRUE)
-  formulatext <- gsub("equal_symbol", "=", formulatext, fixed = TRUE)
-  formulatext <- gsub("comma_symbol", ",", formulatext, fixed = TRUE)
-  formulatext <- gsub("asterisk_symbol", "*", formulatext, fixed = TRUE)
-  formula <- stats::as.formula(formulatext)
-  formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(formula))), env=parent.frame()) # here we need the formula as a 'call' object
-  
-  sigma.formulatext <- gsub("left_parenthesis", "(", sigma.formula, fixed = TRUE)
-  sigma.formulatext <- gsub("right_parenthesis", ")", sigma.formulatext, fixed = TRUE)
-  sigma.formulatext <- gsub("tilde_symbol", "~", sigma.formulatext, fixed = TRUE)
-  sigma.formulatext <- gsub("equal_symbol", "=", sigma.formulatext, fixed = TRUE)
-  sigma.formulatext <- gsub("comma_symbol", ",", sigma.formulatext, fixed = TRUE)
-  sigma.formulatext <- gsub("asterisk_symbol", "*", sigma.formulatext, fixed = TRUE)
-  sigma.formula <- stats::as.formula(sigma.formulatext)
-  sigma.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(sigma.formula))), env=parent.frame()) # here we need the formula as a 'call' object
-  
-  nu.formulatext <- gsub("left_parenthesis", "(", nu.formula, fixed = TRUE)
-  nu.formulatext <- gsub("right_parenthesis", ")", nu.formulatext, fixed = TRUE)
-  nu.formulatext <- gsub("tilde_symbol", "~", nu.formulatext, fixed = TRUE)
-  nu.formulatext <- gsub("equal_symbol", "=", nu.formulatext, fixed = TRUE)
-  nu.formulatext <- gsub("comma_symbol", ",", nu.formulatext, fixed = TRUE)
-  nu.formulatext <- gsub("asterisk_symbol", "*", nu.formulatext, fixed = TRUE)
-  nu.formula <- stats::as.formula(nu.formulatext)
-  nu.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(nu.formula))), env=parent.frame()) # here we need the formula as a 'call' object
-  
-  tau.formulatext <- gsub("left_parenthesis", "(", tau.formula, fixed = TRUE)
-  tau.formulatext <- gsub("right_parenthesis", ")", tau.formulatext, fixed = TRUE)
-  tau.formulatext <- gsub("tilde_symbol", "~", tau.formulatext, fixed = TRUE)
-  tau.formulatext <- gsub("equal_symbol", "=", tau.formulatext, fixed = TRUE)
-  tau.formulatext <- gsub("comma_symbol", ",", tau.formulatext, fixed = TRUE)
-  tau.formulatext <- gsub("asterisk_symbol", "*", tau.formulatext, fixed = TRUE)
-  tau.formula <- stats::as.formula(tau.formulatext)
-  tau.formula2use <- stats::as.formula(paste0(Reduce(paste, deparse(tau.formula))), env=parent.frame()) # here we need the formula as a 'call' object
   
   family <- gsub("left_parenthesis", "(", family, fixed = TRUE)
   family <- gsub("right_parenthesis", ")", family, fixed = TRUE)

@@ -118,9 +118,12 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     dataTable <- eval(parse(text=data), envir=parent.frame())
   }
   
-  # Create an environment with parent.frame() and gamlss namespace as its parents
-  combined_env <- new.env(parent = asNamespace("gamlss"))
-  parent.env(combined_env) <- parent.frame()
+  # Create an environment with elements from parent.frame() and gamlss namespace 
+  combined_env <- new.env()
+  # Populate with objects from gamlss namespace
+  list2env(as.list(asNamespace("gamlss")), envir = combined_env)
+  # Populate with objects from parent.frame()  (overwriting duplicates if any)
+  list2env(as.list(parent.frame()), envir = combined_env)
   
   ## Reconvert the special symbols to create the appropriate formula & gamlss.family objects
   formulatext <- gsub("left_parenthesis", "(", formula, fixed = TRUE)
