@@ -86,8 +86,9 @@ This is the seventh serverside aggregate function called by ds.gamlss.
 }
 \details{
 It is an aggregation function that calculates the normalized quantile
-residuals. For more details please see the extensive header of ds.gamlss and also the 
-gamlss function in native R gamlss package.
+residuals. Furthermore, variables that were saved during the computation are deleted 
+from the server. For more details please see the extensive header of ds.gamlss and 
+also the gamlss function in native R gamlss package.
 }
 \author{
 Annika Swenne
