@@ -78,6 +78,8 @@
 #' algorithm), (iv) bf.tol (the convergence criterion (tolerance level) for the 
 #' backfitting algorithm). The default values for these 4 parameters are set to 
 #' c(0.001, 50, 30, 0.001).
+#' @param autostep logical, indicating whether the steps should be halved automatically 
+#' if the new global deviance is greater than the old one. The default is \code{autostep=TRUE}.
 #' @return a gamlss object with all components as in the native R gamlss function. 
 #' Individual-level information like the components y (the response response) and 
 #' residuals (the normalised quantile residuals of the model) are not disclosed to 
@@ -95,7 +97,8 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
                      sigma.coef.start.names = sigma.coef.start.names, nu.coef.start.names = nu.coef.start.names,
                      tau.coef.start.names = tau.coef.start.names, mu.fix=mu.fix, sigma.fix = sigma.fix, 
                      nu.fix = nu.fix, tau.fix = tau.fix, global.mean = global.mean, 
-                     global.sd = global.sd, control = control, i.control = i.control){
+                     global.sd = global.sd, control = control, i.control = i.control,
+                     autostep = autostep){
   
   
   #**************************************************************************
@@ -223,7 +226,8 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
                                                          control = gamlss::gamlss.control(c.crit=c1[1], n.cyc=1, 
                                                                                   mu.step=c1[3], sigma.step=c1[4], 
                                                                                   nu.step=c1[5], tau.step=c1[6],
-                                                                                  gd.tol=c1[7], trace=FALSE),
+                                                                                  gd.tol=c1[7], trace=FALSE, 
+                                                                                  autostep=autostep),
                                                          i.control = gamlss::glim.control(cc=c2[1], cyc=1, 
                                                                                   bf.cyc=1, bf.tol=c2[4])))
   
@@ -251,18 +255,19 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   ## Block individual level information & get variables for the smoothers
   mod.gamlss.ds$y <- "The response variable is not disclosed!"
   mod.gamlss.ds$residuals <- "The residuals of the model are not disclosed!"
+  mod.gamlss.ds$control$n.cyc <- c1[2] #to get the correct maximum number of iterations
+  mod.gamlss.ds$control$trace <- TRUE  #this is not relevant for ds.gamlss
   if("mu" %in% names(family$parameters)){
     mod.gamlss.ds$mu.fv <- "The fitted values of the mu model are not disclosed!"
     mod.gamlss.ds$mu.lp <- "The linear predictors of the mu model are not disclosed!"
     mod.gamlss.ds$mu.wv <- "The working variable of the mu model are not disclosed!"
     mod.gamlss.ds$mu.wt <- "The working weights of the mu model are not disclosed!"
-    mod.gamlss.ds$mu.terms <- NULL
     mod.gamlss.ds$mu.x <- "The design matrix of the mu model is not disclosed!"
     mod.gamlss.ds$mu.qr <- "The QR decomposition of the mu model is not disclosed!"
     mod.gamlss.ds$mu.formula <- ~1
-    mod.gamlss.ds$mu.s <- "The smoothing fitted values of the mu model are not disclosed!"
-    mod.gamlss.ds$mu.var <- "The variances for the smoothing fitted values of the mu model are not disclosed!"
     if(length(mod.gamlss.ds$mu.coefSmo)>0){
+      mod.gamlss.ds$mu.s <- "The smoothing fitted values of the mu model are not disclosed!"
+      mod.gamlss.ds$mu.var <- "The variances for the smoothing fitted values of the mu model are not disclosed!"
       for(i in 1:length(mod.gamlss.ds$mu.coefSmo)){
         mod.gamlss.ds$mu.coefSmo[[i]]$fv <- "The smoothing fitted values of the mu model are not disclosed!"
         mod.gamlss.ds$mu.coefSmo[[i]]$fun <- "The function for the knots of the mu model is not disclosed!"
@@ -275,13 +280,12 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     mod.gamlss.ds$sigma.lp <- "The linear predictors of the sigma model are not disclosed!"
     mod.gamlss.ds$sigma.wv <- "The working variable of the sigma model are not disclosed!"
     mod.gamlss.ds$sigma.wt <- "The working weights of the sigma model are not disclosed!"
-    mod.gamlss.ds$sigma.terms <- NULL
     mod.gamlss.ds$sigma.x <- "The design matrix of the sigma model is not disclosed!"
     mod.gamlss.ds$sigma.qr <- "The QR decomposition of the sigma model is not disclosed!"
     mod.gamlss.ds$sigma.formula <- ~1
-    mod.gamlss.ds$sigma.s <- "The smoothing fitted values of the sigma model are not disclosed!"
-    mod.gamlss.ds$sigma.var <- "The variances for the smoothing fitted values of the sigma model are not disclosed!"
     if(length(mod.gamlss.ds$sigma.coefSmo)>0){
+      mod.gamlss.ds$sigma.s <- "The smoothing fitted values of the sigma model are not disclosed!"
+      mod.gamlss.ds$sigma.var <- "The variances for the smoothing fitted values of the sigma model are not disclosed!"
       for(i in 1:length(mod.gamlss.ds$sigma.coefSmo)){
         mod.gamlss.ds$sigma.coefSmo[[i]]$fv <- "The smoothing fitted values of the sigma model are not disclosed!"
         mod.gamlss.ds$sigma.coefSmo[[i]]$fun <- "The function for the knots of the sigma model is not disclosed!"
@@ -294,14 +298,13 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     mod.gamlss.ds$nu.lp <- "The linear predictors of the nu model are not disclosed!"
     mod.gamlss.ds$nu.wv <- "The working variable of the nu model are not disclosed!"
     mod.gamlss.ds$nu.wt <- "The working weights of the nu model are not disclosed!"
-    mod.gamlss.ds$nu.terms <- NULL
     mod.gamlss.ds$nu.x <- "The design matrix of the nu model is not disclosed!"
     mod.gamlss.ds$nu.qr <- "The QR decomposition of the nu model is not disclosed!"
     mod.gamlss.ds$nu.formula <- ~1
-    mod.gamlss.ds$nu.s <- "The smoothing fitted values of the nu model are not disclosed!"
-    mod.gamlss.ds$nu.var <- "The variances for the smoothing fitted values of the nu model are not disclosed!"
     if(length(mod.gamlss.ds$nu.coefSmo)>0){
       for(i in 1:length(mod.gamlss.ds$nu.coefSmo)){
+        mod.gamlss.ds$nu.s <- "The smoothing fitted values of the nu model are not disclosed!"
+        mod.gamlss.ds$nu.var <- "The variances for the smoothing fitted values of the nu model are not disclosed!"
         mod.gamlss.ds$nu.coefSmo[[i]]$fv <- "The smoothing fitted values of the nu model are not disclosed!"
         mod.gamlss.ds$nu.coefSmo[[i]]$fun <- "The function for the knots of the nu model is not disclosed!"
         smoother.names <- c(smoother.names, mod.gamlss.ds$nu.coefSmo[[i]]$name)
@@ -313,13 +316,12 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     mod.gamlss.ds$tau.lp <- "The linear predictors of the tau model are not disclosed!"
     mod.gamlss.ds$tau.wv <- "The working variable of the tau model are not disclosed!"
     mod.gamlss.ds$tau.wt <- "The working weights of the tau model are not disclosed!"
-    mod.gamlss.ds$tau.terms <- NULL
     mod.gamlss.ds$tau.x <- "The design matrix of the tau model is not disclosed!"
     mod.gamlss.ds$tau.qr <- "The QR decomposition of the tau model is not disclosed!"
     mod.gamlss.ds$tau.formula <- ~1
-    mod.gamlss.ds$tau.s <- "The smoothing fitted values of the tau model are not disclosed!"
-    mod.gamlss.ds$tau.var <- "The variances for the smoothing fitted values of the tau model are not disclosed!"
     if(length(mod.gamlss.ds$tau.coefSmo)>0){
+      mod.gamlss.ds$tau.s <- "The smoothing fitted values of the tau model are not disclosed!"
+      mod.gamlss.ds$tau.var <- "The variances for the smoothing fitted values of the tau model are not disclosed!"
       for(i in 1:length(mod.gamlss.ds$tau.coefSmo)){
         mod.gamlss.ds$tau.coefSmo[[i]]$fv <- "The smoothing fitted values of the tau model are not disclosed!"
         mod.gamlss.ds$tau.coefSmo[[i]]$fun <- "The function for the knots of the tau model is not disclosed!"
