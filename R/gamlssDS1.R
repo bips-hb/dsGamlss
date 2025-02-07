@@ -23,34 +23,6 @@
 #' i.e. BI. Family functions can take arguments, as in BI(mu.link=probit).
 #' @param data an optional character string specifying a data.frame object holding 
 #' the data to be analysed under the specified model 
-#' @param mu.coef.start optional vector of regression coefficients to compute improved 
-#' start values for mu. Default NULL.
-#' @param sigma.coef.start optional vector of regression coefficients to compute improved
-#' start values for sigma. Default NULL.
-#' @param nu.coef.start optional vector of regression coefficients to compute improved
-#' start values for nu. Default NULL.
-#' @param tau.coef.start optional vector of regression coefficients to compute improved
-#' start values for tau. Default NULL.
-#' @param mu.coef.start.names vector with names for the regression coefficients in 
-#' \code{mu.coef.start}. These names are needed to obtain the design matrix to compute the
-#' improved start values for mu. If values are given in \code{mu.coef.start} but 
-#' \code{mu.coef.start.names} is NULL then the same formula as in \code{formula} is used to
-#' obtain the design matrix. Default NULL.
-#' @param sigma.coef.start.names vector with names for the regression coefficients in 
-#' \code{sigma.coef.start}. These names are needed to obtain the design matrix to compute the
-#' improved start values for sigma. If values are given in \code{sigma.coef.start} but 
-#' \code{sigma.coef.start.names} is NULL then the same formula as in \code{sigma.formula} 
-#' is used to obtain the design matrix. Default NULL.
-#' @param nu.coef.start.names vector with names for the regression coefficients in 
-#' \code{nu.coef.start}. These names are needed to obtain the design matrix to compute the
-#' improved start values for nu. If values are given in \code{nu.coef.start} but 
-#' \code{nu.coef.start.names} is NULL then the same formula as in \code{nu.formula} 
-#' is used to obtain the design matrix. Default NULL.
-#' @param tau.coef.start.names vector with names for the regression coefficients in 
-#' \code{tau.coef.start}. These names are needed to obtain the design matrix to compute the
-#' improved start values for tau. If values are given in \code{tau.coef.start} but 
-#' \code{tau.coef.start.names} is NULL then the same formula as in \code{tau.formula} 
-#' is used to obtain the design matrix. Default NULL.
 #' @param mu.fix logical, indicating whether the mu parameter should be kept fixed
 #' in the fitting processes.
 #' @param sigma.fix logical, indicating whether the sigma parameter should be kept
@@ -91,11 +63,7 @@
 #'
 
 gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formula = nu.formula,
-                     tau.formula = tau.formula, family = family, data = data, mu.coef.start = mu.coef.start, 
-                     sigma.coef.start = sigma.coef.start, nu.coef.start = nu.coef.start,
-                     tau.coef.start = tau.coef.start, mu.coef.start.names = mu.coef.start.names, 
-                     sigma.coef.start.names = sigma.coef.start.names, nu.coef.start.names = nu.coef.start.names,
-                     tau.coef.start.names = tau.coef.start.names, mu.fix=mu.fix, sigma.fix = sigma.fix, 
+                     tau.formula = tau.formula, family = family, data = data, mu.fix=mu.fix, sigma.fix = sigma.fix, 
                      nu.fix = nu.fix, tau.fix = tau.fix, global.mean = global.mean, 
                      global.sd = global.sd, control = control, i.control = i.control,
                      autostep = autostep){
@@ -175,38 +143,6 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   family <- gsub("comma_symbol", ",", family, fixed = TRUE)
   familytext <- family
   family <- gamlss.dist::as.family(eval(parse(text=family), envir=environment()))
-  
-  if(!is.null(mu.coef.start.names)){
-    mu.coef.start.names <- gsub("left_parenthesis", "(", mu.coef.start.names, fixed = TRUE)
-    mu.coef.start.names <- gsub("right_parenthesis", ")", mu.coef.start.names, fixed = TRUE)
-    mu.coef.start.names <- gsub("asterisk_symbol", "*", mu.coef.start.names, fixed = TRUE)
-    mu.coef.start.names <- gsub("caret_symbol", "^", mu.coef.start.names, fixed = TRUE)
-    mu.coef.start.names <- unlist(strsplit(mu.coef.start.names, split=","))
-  }
-  
-  if(!is.null(sigma.coef.start.names)){
-    sigma.coef.start.names <- gsub("left_parenthesis", "(", sigma.coef.start.names, fixed = TRUE)
-    sigma.coef.start.names <- gsub("right_parenthesis", ")", sigma.coef.start.names, fixed = TRUE)
-    sigma.coef.start.names <- gsub("asterisk_symbol", "*", sigma.coef.start.names, fixed = TRUE)
-    sigma.coef.start.names <- gsub("caret_symbol", "^", sigma.coef.start.names, fixed = TRUE)
-    sigma.coef.start.names <- unlist(strsplit(sigma.coef.start.names, split=","))
-  }
-  
-  if(!is.null(nu.coef.start.names)){
-    nu.coef.start.names <- gsub("left_parenthesis", "(", nu.coef.start.names, fixed = TRUE)
-    nu.coef.start.names <- gsub("right_parenthesis", ")", nu.coef.start.names, fixed = TRUE)
-    nu.coef.start.names <- gsub("asterisk_symbol", "*", nu.coef.start.names, fixed = TRUE)
-    nu.coef.start.names <- gsub("caret_symbol", "^", nu.coef.start.names, fixed = TRUE)
-    nu.coef.start.names <- unlist(strsplit(nu.coef.start.names, split=","))
-  }
-  
-  if(!is.null(tau.coef.start.names)){
-    tau.coef.start.names <- gsub("left_parenthesis", "(", tau.coef.start.names, fixed = TRUE)
-    tau.coef.start.names <- gsub("right_parenthesis", ")", tau.coef.start.names, fixed = TRUE)
-    tau.coef.start.names <- gsub("asterisk_symbol", "*", tau.coef.start.names, fixed = TRUE)
-    tau.coef.start.names <- gsub("caret_symbol", "^", tau.coef.start.names, fixed = TRUE)
-    tau.coef.start.names <- unlist(strsplit(tau.coef.start.names, split=","))
-  }
   
   c1 <- as.numeric(unlist(strsplit(control, split=",")))
   c2 <- as.numeric(unlist(strsplit(i.control, split=",")))
@@ -370,202 +306,34 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   nu <- NULL
   tau <- NULL
   
-  ## Create the design matrix to compute the start values
-  if("mu" %in% names(family$parameters)){
-    if(!is.null(mu.coef.start.names)){
-      # Check for presence of any form of intercept in mu.coef.start.names
-      mu.include.intercept <- any(grepl("\\bintercept\\b", mu.coef.start.names, ignore.case = TRUE))
-      # Remove any form of "intercept" from the terms if it exists
-      mu.terms <- mu.coef.start.names[!grepl("\\bintercept\\b", mu.coef.start.names, ignore.case = TRUE)]
-      # Create the formula string based on the presence of intercept
-      if (mu.include.intercept==TRUE) {
-        if (length(mu.terms) > 0){
-          mu.formula.start <- stats::as.formula(paste("~", paste(mu.terms, collapse = " + ")))  # includes intercept by default
-        } else {
-          # only intercept
-          mu.formula.start <- stats::as.formula("~ 1")
-        }
-      } else {
-        mu.formula.start <- stats::as.formula(paste("~ 0 +", paste(mu.terms, collapse = " + ")))  # no intercept
-      }
-      # Here we need the formula as a 'call' object
-      mu.formula.start <- stats::as.formula(paste0(Reduce(paste, deparse(mu.formula.start))), env=parent.frame())
-      # Generate the design matrix
-      mu.x.start <- stats::model.matrix(mu.formula.start, data = dataTable)
-      mu.x.start.source <- "mu.coef.start.names"
-      
-    } else {
-      mu.x.start <- mu.x
-      mu.x.start.source <- "the formula for mu"
-    }
-  }
-  
-  if("sigma" %in% names(family$parameters)){
-    if(!is.null(sigma.coef.start.names)){
-      # Check for presence of any form of intercept in sigma.coef.start.names
-      sigma.include.intercept <- any(grepl("\\bintercept\\b", sigma.coef.start.names, ignore.case = TRUE))
-      # Remove any form of "intercept" from the terms if it exists
-      sigma.terms <- sigma.coef.start.names[!grepl("\\bintercept\\b", sigma.coef.start.names, ignore.case = TRUE)]
-      # Create the formula string based on the presence of intercept
-      if (sigma.include.intercept==TRUE) {
-        if (length(sigma.terms) > 0){
-          sigma.formula.start <- stats::as.formula(paste("~", paste(sigma.terms, collapse = " + ")))  # includes intercept by default
-        } else {
-          # only intercept
-          sigma.formula.start <- stats::as.formula("~ 1")
-        }
-      } else {
-        sigma.formula.start <- stats::as.formula(paste("~ 0 +", paste(sigma.terms, collapse = " + ")))  # no intercept
-      }
-      # Here we need the formula as a 'call' object
-      sigma.formula.start <- stats::as.formula(paste0(Reduce(paste, deparse(sigma.formula.start))), env=parent.frame())
-      # Generate the design matrix
-      sigma.x.start <- stats::model.matrix(sigma.formula.start, data = dataTable)
-      sigma.x.start.source <- "sigma.coef.start.names"
-    } else {
-      sigma.x.start <- sigma.x
-      sigma.x.start.source <- "the sigma.formula"
-    }
-  }
-  
-  if("nu" %in% names(family$parameters)){
-    if(!is.null(nu.coef.start.names)){
-      # Check for presence of any form of intercept in nu.coef.start.names
-      nu.include.intercept <- any(grepl("\\bintercept\\b", nu.coef.start.names, ignore.case = TRUE))
-      # Remove any form of "intercept" from the terms if it exists
-      nu.terms <- nu.coef.start.names[!grepl("\\bintercept\\b", nu.coef.start.names, ignore.case = TRUE)]
-      # Create the formula string based on the presence of intercept
-      if (nu.include.intercept==TRUE) {
-        if (length(nu.terms) > 0){
-          nu.formula.start <- stats::as.formula(paste("~", paste(nu.terms, collapse = " + ")))  # includes intercept by default
-        } else {
-          # only intercept
-          nu.formula.start <- stats::as.formula("~ 1")
-        }
-      } else {
-        nu.formula.start <- stats::as.formula(paste("~ 0 +", paste(nu.terms, collapse = " + ")))  # no intercept
-      }
-      # Here we need the formula as a 'call' object
-      nu.formula.start <- stats::as.formula(paste0(Reduce(paste, deparse(nu.formula.start))), env=parent.frame())
-      # Generate the design matrix
-      nu.x.start <- stats::model.matrix(nu.formula.start, data = dataTable)
-      nu.x.start.source <- "nu.coef.start.names"
-    } else {
-      nu.x.start <- nu.x
-      nu.x.start.source <- "the nu.formula"
-    }
-  }
-  
-  if("tau" %in% names(family$parameters)){
-    if(!is.null(tau.coef.start.names)){
-      # Check for presence of any form of intercept in tau.coef.start.names
-      tau.include.intercept <- any(grepl("\\bintercept\\b", tau.coef.start.names, ignore.case = TRUE))
-      # Remove any form of "intercept" from the terms if it exists
-      tau.terms <- tau.coef.start.names[!grepl("\\bintercept\\b", tau.coef.start.names, ignore.case = TRUE)]
-      # Create the formula string based on the presence of intercept
-      if (tau.include.intercept==TRUE) {
-        if (length(tau.terms) > 0){
-          tau.formula.start <- stats::as.formula(paste("~", paste(tau.terms, collapse = " + ")))  # includes intercept by default
-        } else {
-          # only intercept
-          tau.formula.start <- stats::as.formula("~ 1")
-        }
-      } else {
-        tau.formula.start <- stats::as.formula(paste("~ 0 +", paste(tau.terms, collapse = " + ")))  # no intercept
-      }
-      # Here we need the formula as a 'call' object
-      sigma.formula.start <- stats::as.formula(paste0(Reduce(paste, deparse(sigma.formula.start))), env=parent.frame())
-      # Generate the design matrix
-      tau.x.start <- stats::model.matrix(tau.formula.start, data = dataTable)
-      tau.x.start.source <- "tau.coef.start.names"
-    } else {
-      tau.x.start <- tau.x
-      tau.x.start.source <- "the tau.formula"
-    }
-  }
-  
   ## compute start values for parameters
   if("mu" %in% names(family$parameters)){
-    if(!is.null(mu.coef.start)){ 
-      if(length(mu.coef.start)==dim(mu.x.start)[2]){
-        eta <- mu.x.start %*% mu.coef.start
-        mu <- as.vector(eval(parse(text="family$mu.linkinv(eta)"), envir=environment()))
-      } else{
-        warning(paste("The length of mu.coef.start does not match with the length of", dim(mu.x.start)[2], "that is implied by ", mu.x.start.source, ". 
-                      Therefore, mu.coef.start is ignored and instead the default values are used for the initialization of mu.", sep=" "))
-        if (familytext=="NO2()"){
-          mu <- eval(family$mu.initial, envir=environment())
-        } else {
-          mu <- (y + global.mean)/2
-        }
-      }
-    } else{
-      if (familytext=="NO2()"){
-        mu <- eval(family$mu.initial, envir=environment())
-      } else {
-        mu <- (y + global.mean)/2
-      }
+    if (familytext=="NO2()"){
+      mu <- eval(family$mu.initial, envir=environment())
+    } else {
+      mu <- (y + global.mean)/2
     }
     base::assign("temp_mu", mu, env=parent.frame())
   }
   
   if("sigma" %in% names(family$parameters)){
-    if(!is.null(sigma.coef.start)){
-      if(length(sigma.coef.start)==dim(sigma.x.start)[2]){
-        eta <- sigma.x.start %*% sigma.coef.start
-        sigma <- as.vector(eval(parse(text="family$sigma.linkinv(eta)"), envir=environment()))
-      } else{
-        warning(paste("The length of sigma.coef.start does not match with the length of", dim(sigma.x.start)[2], "that is implied by ", sigma.x.start.source, ". 
-                      Therefore, sigma.coef.start is ignored and instead the default values are used for the initialization of sigma.", sep=" "))
-        if (familytext=="NO()"){
-          sigma <- rep(global.sd, length(y))
-        } else if (familytext=="NO2()"){
-          sigma <- rep(global.sd^2, length(y))
-        } else {
-          eval(family$sigma.initial, envir=environment())
-        }
-      }
+    if (familytext=="NO()"){
+      sigma <- rep(global.sd, length(y))
+    } else if (familytext=="NO2()"){
+      sigma <- rep(global.sd^2, length(y))
     } else {
-      if (familytext=="NO()"){
-        sigma <- rep(global.sd, length(y))
-      } else if (familytext=="NO2()"){
-        sigma <- rep(global.sd^2, length(y))
-      } else {
-        eval(family$sigma.initial, envir=environment())
-      }
+      eval(family$sigma.initial, envir=environment())
     }
     base::assign("temp_sigma", sigma, env=parent.frame())
   }
   
   if("nu" %in% names(family$parameters)){
-    if(!is.null(nu.coef.start)){
-      if(length(nu.coef.start)==dim(nu.x.start)[2]){
-        eta <- nu.x.start %*% nu.coef.start
-        nu <- as.vector(eval(parse(text="family$nu.linkinv(eta)"), envir=environment()))
-      } else{
-        warning(paste("The length of nu.coef.start does not match with the length of", dim(nu.x.start)[2], "that is implied by ", nu.x.start.source, ". 
-                      Therefore, nu.coef.start is ignored and instead the default values are used for the initialization of nu.", sep=" "))
-        eval(family$nu.initial, envir=environment())
-      }
-    } else{
-      eval(family$nu.initial, envir=environment())
-    }
+    eval(family$nu.initial, envir=environment())
     base::assign("temp_nu", nu, env=parent.frame())
   }
   
   if("tau" %in% names(family$parameters)){
-    if(!is.null(tau.coef.start)){
-      if(length(tau.coef.start)==dim(tau.x.start)[2]){
-        eta <- tau.x.start %*% tau.coef.start
-        tau <- as.vector(eval(parse(text="family$tau.linkinv(eta)"), envir=environment()))
-      } else{
-        warning(paste("The length of tau.coef.start does not match with the length of", dim(tau.x.start)[2], "that is implied by ", tau.x.start.source, ".
-                      Therefore, tau.coef.start is ignored and instead the default values are used for the initialization of tau.", sep=" "))
-        eval(family$tau.initial, envir=environment())
-      }
-    } else{
-      eval(family$tau.initial, envir=environment())
-    }
+    eval(family$tau.initial, envir=environment())
     base::assign("temp_tau", tau, env=parent.frame())
   }
   
