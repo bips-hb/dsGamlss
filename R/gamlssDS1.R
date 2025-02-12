@@ -513,6 +513,16 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     errorMessage <- "No errors"
   }else{
     errorMessage <- "Study data or applied model invalid for this source"
+    mod.gamlss.ds <- NA
+    G.dev <- NA
+    dim.mu.x <- NA
+    dim.sigma.x <- NA
+    dim.nu.x <- NA
+    dim.tau.x <- NA
+    smoother.names <- NA 
+    smoother.xmin  <- NA
+    smoother.xmax <- NA
+    rm(list=ls(pattern="^temp_", envir=parent.frame()), envir=parent.frame())
   }
 
   #**************************************************************************
