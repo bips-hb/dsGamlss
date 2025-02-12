@@ -6,10 +6,6 @@
 \usage{
 gamlssDS6(
   parameter = parameter,
-  formula = formula,
-  sigma.formula = sigma.formula,
-  nu.formula = nu.formula,
-  tau.formula = tau.formula,
   family = family,
   data = data,
   mu.fix = mu.fix,
@@ -37,21 +33,6 @@ gamlssDS6(
 \arguments{
 \item{parameter}{a string specifing for which of the model parameters "mu", "sigma", "nu"
 or "tau" the model fitting should be performed}
-
-\item{formula}{a formula object, with the response on the left of an ~ operator, 
-and the terms, separated by + operators, on the right. Nonparametric smoothing
-terms are indicated by pb() for penalised beta splines, cs for smoothing splines, 
-lo for loess smooth terms and random or ra for random terms, 
-e.g. y~cs(x,df=5)+x1+x2*x3.}
-
-\item{sigma.formula}{a formula object for fitting a model to the sigma parameter,
-as in the formula above, e.g. sigma.formula=~cs(x,df=5).}
-
-\item{nu.formula}{a formula object for fitting a model to the nu parameter, 
-e.g. nu.formula=~x}
-
-\item{tau.formula}{a formula object for fitting a model to the tau parameter, 
-e.g. tau.formula=~cs(x,df=2)}
 
 \item{family}{a gamlss.family object, which is used to define the distribution 
 and the link functions of the various parameters. The distribution families 

@@ -17,14 +17,6 @@
 #' i.e. BI. Family functions can take arguments, as in BI(mu.link=probit).
 #' @param data an optional character string specifying a data.frame object holding 
 #' the data to be analysed under the specified model 
-#' @param mu.fix logical, indicate whether the mu parameter should be kept fixed
-#' in the fitting processes.
-#' @param sigma.fix logical, indicate whether the sigma parameter should be kept
-#' fixed in the fitting processes.
-#' @param nu.fix logical, indicate whether the nu parameter should be kept fixed 
-#' in the fitting processes.
-#' @param tau.fix logical, indicate whether the tau parameter should be kept fixed
-#' in the fitting processes.
 #' @param mu.beta.vect a numeric vector created by the clientside function specifying the
 #' vector of regression coefficients for mu at the current iteration.
 #' @param sigma.beta.vect a numeric vector created by the clientside function specifying the
@@ -58,8 +50,7 @@
 #'
 
 gamlssDS2 <- function(parameter = parameter, family = family, 
-                      data = data, mu.fix = mu.fix, sigma.fix = sigma.fix, nu.fix = nu.fix, 
-                      tau.fix = tau.fix, mu.beta.vect = mu.beta.vect, sigma.beta.vect = sigma.beta.vect,
+                      data = data, mu.beta.vect = mu.beta.vect, sigma.beta.vect = sigma.beta.vect,
                       nu.beta.vect = nu.beta.vect, tau.beta.vect = tau.beta.vect,
                       control = control, i.control = i.control){
   
@@ -247,7 +238,7 @@ gamlssDS2 <- function(parameter = parameter, family = family,
   # giving a controlled shut down with a warning about invalid data.
   # So as a safety measure, we will now use the same test that is used to
   # trigger a controlled trap in the clientside function to destroy the
-  # score.vector and information.matrix in the study with the problem.
+  # vector and matrix in the study with the problem.
   # So this will make model fail without explanation
   
   # Disclosure code from gamlssDS1
@@ -318,7 +309,7 @@ gamlssDS2 <- function(parameter = parameter, family = family,
   # giving a controlled shut down with a warning about invalid data.
   # So as a safety measure, we will now use the same test that is used to
   # trigger a controlled trap in the clientside function to destroy the
-  # score.vector and information.matrix in the study with the problem.
+  # vector and matrix in the study with the problem.
   
   ## check y vector validity
   y.invalid <- 0
@@ -419,10 +410,12 @@ gamlssDS2 <- function(parameter = parameter, family = family,
        sum(tau.par.invalid)>0 || gamlss.saturation.invalid>0)){
     errorMessage.combined <- "No errors"
   }else{
-    info.matrix <- NA
-    score.vector <- NA
     disclosure.risk <- 1
+    matrix <- NA
+    vector <- NA
+    dv <- NA
     errorMessage.combined <- c(errorMessage.combined, "MODEL FAILED: model or data invalid, matrix and vector destroyed")
+    rm(list=ls(pattern="^temp_", envir=parent.frame()), envir=parent.frame())
   }
   
   

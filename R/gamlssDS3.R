@@ -15,14 +15,6 @@
 #' i.e. BI. Family functions can take arguments, as in BI(mu.link=probit).
 #' @param data an optional character string specifying a data.frame object holding 
 #' the data to be analysed under the specified model 
-#' @param mu.fix logical, indicate whether the mu parameter should be kept fixed
-#' in the fitting processes.
-#' @param sigma.fix logical, indicate whether the sigma parameter should be kept
-#' fixed in the fitting processes.
-#' @param nu.fix logical, indicate whether the nu parameter should be kept fixed 
-#' in the fitting processes.
-#' @param tau.fix logical, indicate whether the tau parameter should be kept fixed
-#' in the fitting processes.
 #' @param mu.beta.vect a numeric vector created by the clientside function specifying the
 #' vector of regression coefficients for mu at the current iteration.
 #' @param sigma.beta.vect a numeric vector created by the clientside function specifying the
@@ -69,8 +61,6 @@
 #'
 
 gamlssDS3 <- function(parameter = parameter, smoother = smoother, family = family, data = data, 
-                      mu.fix = mu.fix, sigma.fix = sigma.fix, nu.fix = nu.fix, 
-                      tau.fix = tau.fix,
                       mu.beta.vect = mu.beta.vect, sigma.beta.vect = sigma.beta.vect,
                       nu.beta.vect = nu.beta.vect, tau.beta.vect = tau.beta.vect,
                       mu.gamma.vect = mu.gamma.vect, sigma.gamma.vect = sigma.gamma.vect,
