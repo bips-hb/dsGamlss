@@ -25,7 +25,7 @@ This is an internal function called by the function 'gamlssDS2' and 'gamlssDS3'.
 }
 \details{
 The function is based on the internal bbase-function defined in gamlss::pb (version 5.4-12).
-         Note that unlike in the orgininal function the use of quantiles is currently not implemented in
+         Note that unlike in the original function the use of quantiles is currently not implemented in
          bbase
 }
 \author{
