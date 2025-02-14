@@ -23,22 +23,22 @@ gamlssDS1(
 )
 }
 \arguments{
-\item{formula}{A formula string in the legal transmission format for DataSHIELD, 
+\item{formula}{A formula string in the legal transmission format for DataSHIELD,
 specifying the model for the mu distribution parameter. The DataSHIELD legal transmission
 format means that special characters, like '(' are replaced with the corresponding verbal
 descriptions, e.g. 'left_parenthesis'.}
 
-\item{sigma.formula}{A formula string in the legal transmission format for DataSHIELD, 
+\item{sigma.formula}{A formula string in the legal transmission format for DataSHIELD,
 specifying the model for the sigma distribution parameter. The DataSHIELD legal transmission
 format means that special characters, like '(' are replaced with the corresponding verbal
 descriptions, e.g. 'left_parenthesis'.}
 
-\item{nu.formula}{A formula string in the legal transmission format for DataSHIELD, 
+\item{nu.formula}{A formula string in the legal transmission format for DataSHIELD,
 specifying the model for the nu distribution parameter. The DataSHIELD legal transmission
 format means that special characters, like '(' are replaced with the corresponding verbal
 descriptions, e.g. 'left_parenthesis'.}
 
-\item{tau.formula}{A formula string in the legal transmission format for DataSHIELD, 
+\item{tau.formula}{A formula string in the legal transmission format for DataSHIELD,
 specifying the model for the tau distribution parameter. The DataSHIELD legal transmission
 format means that special characters, like '(' are replaced with the corresponding verbal
 descriptions, e.g. 'left_parenthesis'.}
@@ -47,10 +47,10 @@ descriptions, e.g. 'left_parenthesis'.}
 is used to define the distribution of the response variable. The DataSHIELD legal transmission
 format means that special characters, like '(' are replaced with the corresponding verbal
 descriptions, e.g. 'left_parenthesis'. Currently, only the following families are supported:
-\code{family=c('NOleft_parenthesisright_parenthesis', 'NO2left_parenthesisright_parenthesis', 
+\code{family=c('NOleft_parenthesisright_parenthesis', 'NO2left_parenthesisright_parenthesis',
 'BCCGleft_parenthesisright_parenthesis', 'BCPEleft_parenthesisright_parenthesis')}.}
 
-\item{data}{A character string specifying a data.frame object holding 
+\item{data}{A character string specifying a data.frame object holding
 the data to be analysed under the specified model.}
 
 \item{mu.fix}{Logical, indicating whether the mu parameter should be kept fixed
@@ -59,7 +59,7 @@ in the fitting processes. Default \code{mu.fix=FALSE}.}
 \item{sigma.fix}{Logical, indicating whether the sigma parameter should be kept
 fixed in the fitting processes. Default \code{sigma.fix=FALSE}.}
 
-\item{nu.fix}{Logical, indicating whether the nu parameter should be kept fixed 
+\item{nu.fix}{Logical, indicating whether the nu parameter should be kept fixed
 in the fitting processes. Default \code{nu.fix=FALSE}.}
 
 \item{tau.fix}{Logical, indicating whether the tau parameter should be kept fixed
@@ -73,24 +73,24 @@ Otherwise \code{global.mean=NULL}.}
 which is necessary to initialize the distribution parameters for some families.
 Otherwise \code{global.sd=NULL}.}
 
-\item{control}{This sets the control parameters of the outer iterations algorithm 
-using the gamlss.control function. This is a comma-separated string of 7 numeric values: 
-(i) c.crit (the convergence criterion for the algorithm), (ii) n.cyc (the number of cycles of 
-the algorithm), (iii) mu.step (the step length for the parameter mu), (iv) sigma.step 
+\item{control}{This sets the control parameters of the outer iterations algorithm
+using the gamlss.control function. This is a comma-separated string of 7 numeric values:
+(i) c.crit (the convergence criterion for the algorithm), (ii) n.cyc (the number of cycles of
+the algorithm), (iii) mu.step (the step length for the parameter mu), (iv) sigma.step
 (the step length for the parameter sigma), (v) nu.step (the step length for the
 parameter nu), (vi) tau.step (the step length for the parameter tau), (vii) gd.tol
-(global deviance tolerance level). The default values for these 7 parameters are 
+(global deviance tolerance level). The default values for these 7 parameters are
 set to \code{control='0.001,20,1,1,1,1,Inf'}.}
 
-\item{i.control}{This sets the control parameters of the inner iterations of the 
-RS algorithm using the glim.control function. This is a comma-separated string of 4 numeric values: 
-(i) cc (the convergence criterion for the algorithm), (ii) cyc (the number of 
-cycles of the algorithm), (iii) bf.cyc (the number of cycles of the backfitting 
-algorithm), (iv) bf.tol (the convergence criterion (tolerance level) for the 
-backfitting algorithm). The default values for these 4 parameters are set to 
+\item{i.control}{This sets the control parameters of the inner iterations of the
+RS algorithm using the glim.control function. This is a comma-separated string of 4 numeric values:
+(i) cc (the convergence criterion for the algorithm), (ii) cyc (the number of
+cycles of the algorithm), (iii) bf.cyc (the number of cycles of the backfitting
+algorithm), (iv) bf.tol (the convergence criterion (tolerance level) for the
+backfitting algorithm). The default values for these 4 parameters are set to
 \code{i.control='0.001,50,30,0.001'}.}
 
-\item{autostep}{Logical, indicating whether the steps should be halved automatically 
+\item{autostep}{Logical, indicating whether the steps should be halved automatically
 if the new global deviance is greater than the old one. The default is \code{autostep=TRUE}.}
 }
 \value{

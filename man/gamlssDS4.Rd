@@ -34,10 +34,10 @@ the model fitting should be performed.}
 is used to define the distribution of the response variable. The DataSHIELD legal transmission
 format means that special characters, like '(' are replaced with the corresponding verbal
 descriptions, e.g. 'left_parenthesis'. Currently, only the following families are supported:
-\code{family=c('NOleft_parenthesisright_parenthesis', 'NO2left_parenthesisright_parenthesis', 
+\code{family=c('NOleft_parenthesisright_parenthesis', 'NO2left_parenthesisright_parenthesis',
 'BCCGleft_parenthesisright_parenthesis', 'BCPEleft_parenthesisright_parenthesis')}.}
 
-\item{data}{A character string specifying a data.frame object holding 
+\item{data}{A character string specifying a data.frame object holding
 the data to be analysed under the specified model.}
 
 \item{mu.beta.vect}{A comma-separated string created by the clientside function specifying the
@@ -72,28 +72,28 @@ boundary for the knots for the smoother in \code{smoother.names}.}
 \item{smoother.xr}{A comma-separated string created by the clientside function specifying the right
 boundary for the knots for the smoother in \code{smoother.names}.}
 
-\item{control}{This sets the control parameters of the outer iterations algorithm 
-using the gamlss.control function. This is a comma-separated string of 7 numeric values: 
-(i) c.crit (the convergence criterion for the algorithm), (ii) n.cyc (the number of cycles of 
-the algorithm), (iii) mu.step (the step length for the parameter mu), (iv) sigma.step 
+\item{control}{This sets the control parameters of the outer iterations algorithm
+using the gamlss.control function. This is a comma-separated string of 7 numeric values:
+(i) c.crit (the convergence criterion for the algorithm), (ii) n.cyc (the number of cycles of
+the algorithm), (iii) mu.step (the step length for the parameter mu), (iv) sigma.step
 (the step length for the parameter sigma), (v) nu.step (the step length for the
 parameter nu), (vi) tau.step (the step length for the parameter tau), (vii) gd.tol
-(global deviance tolerance level). The default values for these 7 parameters are 
+(global deviance tolerance level). The default values for these 7 parameters are
 set to \code{control='0.001,20,1,1,1,1,Inf'}.}
 
-\item{i.control}{This sets the control parameters of the inner iterations of the 
-RS algorithm using the glim.control function. This is a comma-separated string of 4 numeric values: 
-(i) cc (the convergence criterion for the algorithm), (ii) cyc (the number of 
-cycles of the algorithm), (iii) bf.cyc (the number of cycles of the backfitting 
-algorithm), (iv) bf.tol (the convergence criterion (tolerance level) for the 
-backfitting algorithm). The default values for these 4 parameters are set to 
+\item{i.control}{This sets the control parameters of the inner iterations of the
+RS algorithm using the glim.control function. This is a comma-separated string of 4 numeric values:
+(i) cc (the convergence criterion for the algorithm), (ii) cyc (the number of
+cycles of the algorithm), (iii) bf.cyc (the number of cycles of the backfitting
+algorithm), (iv) bf.tol (the convergence criterion (tolerance level) for the
+backfitting algorithm). The default values for these 4 parameters are set to
 \code{i.control='0.001,50,30,0.001'}.}
 }
 \value{
 A list with the following elements.
 \describe{
  \item{\code{nobs}}{Numeric value with the number of observations on the server.}
- \item{\code{inner.product}}{Numeric value with inner product between partial residuals and the corresponding fitted partial residuals. 
+ \item{\code{inner.product}}{Numeric value with inner product between partial residuals and the corresponding fitted partial residuals.
  This is needed on the clientside to estimate the smoothing parameter lambda.}
 }
 }
@@ -102,8 +102,8 @@ This is the fourth serverside aggregate function called by \code{\link[dsGamlssC
 }
 \details{
 It is an aggregation function that returns the required inner product
-to estimate the smoothing parameter lambda with the maximum-likelihood (ML) method. This function is not 
-intended for direct use by the user. For more details please see the extensive header of 
+to estimate the smoothing parameter lambda with the maximum-likelihood (ML) method. This function is not
+intended for direct use by the user. For more details please see the extensive header of
 \code{\link[dsGamlssClient]{ds.gamlss}}.
 }
 \author{

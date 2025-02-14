@@ -24,10 +24,10 @@ the model fitting should be performed.}
 is used to define the distribution of the response variable. The DataSHIELD legal transmission
 format means that special characters, like '(' are replaced with the corresponding verbal
 descriptions, e.g. 'left_parenthesis'. Currently, only the following families are supported:
-\code{family=c('NOleft_parenthesisright_parenthesis', 'NO2left_parenthesisright_parenthesis', 
+\code{family=c('NOleft_parenthesisright_parenthesis', 'NO2left_parenthesisright_parenthesis',
 'BCCGleft_parenthesisright_parenthesis', 'BCPEleft_parenthesisright_parenthesis')}.}
 
-\item{data}{A character string specifying a data.frame object holding 
+\item{data}{A character string specifying a data.frame object holding
 the data to be analysed under the specified model.}
 
 \item{mu.beta.vect}{A comma-separated string created by the client-side function specifying the
@@ -42,21 +42,21 @@ vector of regression coefficients for nu at the current iteration.}
 \item{tau.beta.vect}{A comma-separated string created by the client-side function specifying the
 vector of regression coefficients for tau at the current iteration.}
 
-\item{control}{This sets the control parameters of the outer iterations algorithm 
-using the gamlss.control function. This is a comma-separated string of 7 numeric values: 
-(i) c.crit (the convergence criterion for the algorithm), (ii) n.cyc (the number of cycles of 
-the algorithm), (iii) mu.step (the step length for the parameter mu), (iv) sigma.step 
+\item{control}{This sets the control parameters of the outer iterations algorithm
+using the gamlss.control function. This is a comma-separated string of 7 numeric values:
+(i) c.crit (the convergence criterion for the algorithm), (ii) n.cyc (the number of cycles of
+the algorithm), (iii) mu.step (the step length for the parameter mu), (iv) sigma.step
 (the step length for the parameter sigma), (v) nu.step (the step length for the
 parameter nu), (vi) tau.step (the step length for the parameter tau), (vii) gd.tol
-(global deviance tolerance level). The default values for these 7 parameters are 
+(global deviance tolerance level). The default values for these 7 parameters are
 set to \code{control='0.001,20,1,1,1,1,Inf'}.}
 
-\item{i.control}{This sets the control parameters of the inner iterations of the 
-RS algorithm using the glim.control function. This is a comma-separated string of 4 numeric values: 
-(i) cc (the convergence criterion for the algorithm), (ii) cyc (the number of 
-cycles of the algorithm), (iii) bf.cyc (the number of cycles of the backfitting 
-algorithm), (iv) bf.tol (the convergence criterion (tolerance level) for the 
-backfitting algorithm). The default values for these 4 parameters are set to 
+\item{i.control}{This sets the control parameters of the inner iterations of the
+RS algorithm using the glim.control function. This is a comma-separated string of 4 numeric values:
+(i) cc (the convergence criterion for the algorithm), (ii) cyc (the number of
+cycles of the algorithm), (iii) bf.cyc (the number of cycles of the backfitting
+algorithm), (iv) bf.tol (the convergence criterion (tolerance level) for the
+backfitting algorithm). The default values for these 4 parameters are set to
 \code{i.control='0.001,50,30,0.001'}.}
 }
 \value{
@@ -76,9 +76,9 @@ This is the second server-side aggregate function called by \code{\link[dsGamlss
 It is an aggregation function that uses the model structure and starting
 parameter vectors constructed by \code{gamlssDS1} to iteratively obtain the weighted least squares estimator for beta.
 The function \code{gamlssDS2} also carries out a series of disclosure checks and if
-the arguments or data fail any of those tests, model construction is blocked and an 
-appropriate server-side error message is created and returned to \code{\link[dsGamlssClient]{ds.gamlss}} on the 
-client-side. This function is not intended for direct use by the user. For more details 
+the arguments or data fail any of those tests, model construction is blocked and an
+appropriate server-side error message is created and returned to \code{\link[dsGamlssClient]{ds.gamlss}} on the
+client-side. This function is not intended for direct use by the user. For more details
 please see the extensive header of \code{\link[dsGamlssClient]{ds.gamlss}}.
 }
 \author{
