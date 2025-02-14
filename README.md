@@ -16,8 +16,8 @@ federated analysis on sensitive data. The DataSHIELD website
 how it works and how to install it. A key point to highlight is that
 DataSHIELD has a client-server infrastructure, so the dsGamlss package
 needs to be used in conjunction with the dsGamlssClient package
-(<https://github.com/bips-hb/dsBaseClient>) - trying to use one without
-the other makes no sense.
+(<https://github.com/bips-hb/dsGamlssClient>) - trying to use one
+without the other makes no sense.
 
 Detailed instructions on how to install DataSHIELD are at
 <https://www.datashield.org/wiki>.
