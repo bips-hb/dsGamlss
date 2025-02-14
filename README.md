@@ -1,3 +1,42 @@
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
 # dsGamlss
 
-A server side R package for GAMLSS in DataSHIELD
+<!-- badges: start -->
+<!-- badges: end -->
+
+The dsGamlss package is a DataSHIELD server-side package that includes
+the server-side functions to fit Generalized Additive Models for
+Location, Scale and Shape (GAMLSS) \[1\] using DataSHIELD.
+
+DataSHIELD is a software package which allows you to do non-disclosive
+federated analysis on sensitive data. The DataSHIELD website
+(<https://www.datashield.org>) has in depth descriptions of what it is,
+how it works and how to install it. A key point to highlight is that
+DataSHIELD has a client-server infrastructure, so the dsGamlss package
+needs to be used in conjunction with the dsGamlssClient package
+(<https://github.com/bips-hb/dsBaseClient>) - trying to use one without
+the other makes no sense.
+
+Detailed instructions on how to install DataSHIELD are at
+<https://www.datashield.org/wiki>.
+
+Discussion and help with using DataSHIELD can be obtained from the
+DataSHIELD Forum <https://datashield.discourse.group/>
+
+## Installation
+
+You can install the development version of dsGamlss from
+[GitHub](https://github.com/) with:
+
+``` r
+# install.packages("devtools")
+devtools::install_github("bips-hb/dsGamlss")
+```
+
+## References
+
+1.  Rigby RA, Stasinopoulos DM. Generalized additive models for
+    location, scale and shape. Journal of the Royal Statistical Society:
+    Series C (Applied Statistics). 2005;54(3):507-54.
