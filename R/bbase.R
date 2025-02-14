@@ -1,15 +1,16 @@
 #' 
-#' @title Local function (by Paul Eilers) that creates the basis for p-splines
-#' @description This is an internal function called by the function 'gamlssDS2' and 'gamlssDS3'.
+#' @title Local function that creates the basis matrix for p-splines
+#' @description This is an internal function called by the functions 'gamlssDS3',
+#' 'gamlssDS4', 'gamlssDS5' and 'gamlssDS6'.
 #' @details The function is based on the internal bbase-function defined in gamlss::pb (version 5.4-12).
 #'          Note that unlike in the original function the use of quantiles is currently not implemented in
 #'          bbase
-#' @param x a vector of x-values.
-#' @param xl left limit for the knots.
-#' @param xr right limit for the knots.
-#' @param ndx number of equal space intervals in x.
-#' @param deg degree of the polynomial.
-#' @return a B-basis matrix for p-splines.
+#' @param x A vector of x-values.
+#' @param xl Left limit for the knots.
+#' @param xr Right limit for the knots.
+#' @param ndx Number of equal space intervals in x.
+#' @param deg Degree of the polynomial.
+#' @return A B-basis matrix for p-splines.
 #' @keywords internal
 #' @author Annika Swenne
 

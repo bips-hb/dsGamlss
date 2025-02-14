@@ -2,26 +2,27 @@
 % Please edit documentation in R/bbase.R
 \name{bbase}
 \alias{bbase}
-\title{Local function (by Paul Eilers) that creates the basis for p-splines}
+\title{Local function that creates the basis matrix for p-splines}
 \usage{
 bbase(x, xl, xr, ndx = 20, deg = 3)
 }
 \arguments{
-\item{x}{a vector of x-values.}
+\item{x}{A vector of x-values.}
 
-\item{xl}{left limit for the knots.}
+\item{xl}{Left limit for the knots.}
 
-\item{xr}{right limit for the knots.}
+\item{xr}{Right limit for the knots.}
 
-\item{ndx}{number of equal space intervals in x.}
+\item{ndx}{Number of equal space intervals in x.}
 
-\item{deg}{degree of the polynomial.}
+\item{deg}{Degree of the polynomial.}
 }
 \value{
-a B-basis matrix for p-splines.
+A B-basis matrix for p-splines.
 }
 \description{
-This is an internal function called by the function 'gamlssDS2' and 'gamlssDS3'.
+This is an internal function called by the functions 'gamlssDS3',
+'gamlssDS4', 'gamlssDS5' and 'gamlssDS6'.
 }
 \details{
 The function is based on the internal bbase-function defined in gamlss::pb (version 5.4-12).

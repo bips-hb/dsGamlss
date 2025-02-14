@@ -1,61 +1,90 @@
 #'
 #' @title gamlssDS1 called by ds.gamlss
-#' @description This is the first serverside aggregate function called by ds.gamlss.
-#' @details It is an aggregation function that sets up the model structure and creates
-#' the starting beta and gamma vectors that feeds, via ds.gamlss into gamlssDS2 to enable iterative
-#' fitting of the gamlss model that has been specified. For more details please see the 
-#' extensive header of ds.gamlss and also the gamlss function in native R gamlss package.
-#' @param formula a formula object, with the response on the left of an ~ operator, 
-#' and the terms, separated by + operators, on the right. Nonparametric smoothing
-#' terms are indicated by pb() for penalised beta splines, cs for smoothing splines, 
-#' lo for loess smooth terms and random or ra for random terms, 
-#' e.g. y~cs(x,df=5)+x1+x2*x3. 
-#' @param sigma.formula a formula object for fitting a model to the sigma parameter,
-#' as in the formula above, e.g. sigma.formula=~cs(x,df=5).
-#' @param nu.formula a formula object for fitting a model to the nu parameter, 
-#' e.g. nu.formula=~x
-#' @param tau.formula a formula object for fitting a model to the tau parameter, 
-#' e.g. tau.formula=~cs(x,df=2)
-#' @param family a gamlss.family object, which is used to define the distribution 
-#' and the link functions of the various parameters. The distribution families 
-#' supported by gamlss() can be found in gamlss.family. Functions such as BI() 
-#' (binomial) produce a family object. Also can be given without the parentheses
-#' i.e. BI. Family functions can take arguments, as in BI(mu.link=probit).
-#' @param data an optional character string specifying a data.frame object holding 
-#' the data to be analysed under the specified model 
-#' @param mu.fix logical, indicating whether the mu parameter should be kept fixed
-#' in the fitting processes.
-#' @param sigma.fix logical, indicating whether the sigma parameter should be kept
-#' fixed in the fitting processes.
-#' @param nu.fix logical, indicating whether the nu parameter should be kept fixed 
-#' in the fitting processes.
-#' @param tau.fix logical, indicating whether the tau parameter should be kept fixed
-#' in the fitting processes.
-#' @param global.mean numeric value, giving the global mean of the outcome variable
-#' (necessary to initialize the distribution parameter for some families, otherwise NULL)
-#' @param global.sd numeric value, giving the global sd of the outcome variable
-#' (necessary to initialize the distribution parameter for some families, otherwise NULL)
-#' @param control this sets the control parameters of the outer iterations algorithm 
-#' using the gamlss.control function. This is a vector of 7 numeric values: (i) c.crit 
-#' (the convergence criterion for the algorithm), (ii) n.cyc (the number of cycles of 
+#' @description This is the first server-side aggregate function called by \code{\link[dsGamlssClient]{ds.gamlss}}.
+#' @details It is an aggregation function that sets up the appropriate model structure
+#' and dimensions to fit a \code{ds.gamlss} model. This function is not intended for direct
+#' use by the user. For more details please see the extensive header of \code{\link[dsGamlssClient]{ds.gamlss}}.
+#' @param formula A formula string in the legal transmission format for DataSHIELD, 
+#' specifying the model for the mu distribution parameter. The DataSHIELD legal transmission
+#' format means that special characters, like '(' are replaced with the corresponding verbal
+#' descriptions, e.g. 'left_parenthesis'.
+#' @param sigma.formula A formula string in the legal transmission format for DataSHIELD, 
+#' specifying the model for the sigma distribution parameter. The DataSHIELD legal transmission
+#' format means that special characters, like '(' are replaced with the corresponding verbal
+#' descriptions, e.g. 'left_parenthesis'.
+#' @param nu.formula A formula string in the legal transmission format for DataSHIELD, 
+#' specifying the model for the nu distribution parameter. The DataSHIELD legal transmission
+#' format means that special characters, like '(' are replaced with the corresponding verbal
+#' descriptions, e.g. 'left_parenthesis'.
+#' @param tau.formula A formula string in the legal transmission format for DataSHIELD, 
+#' specifying the model for the tau distribution parameter. The DataSHIELD legal transmission
+#' format means that special characters, like '(' are replaced with the corresponding verbal
+#' descriptions, e.g. 'left_parenthesis'.
+#' @param family A family string in the legal transmission format for DataSHIELD, which
+#' is used to define the distribution of the response variable. The DataSHIELD legal transmission
+#' format means that special characters, like '(' are replaced with the corresponding verbal
+#' descriptions, e.g. 'left_parenthesis'. Currently, only the following families are supported:
+#' \code{family=c('NOleft_parenthesisright_parenthesis', 'NO2left_parenthesisright_parenthesis', 
+#' 'BCCGleft_parenthesisright_parenthesis', 'BCPEleft_parenthesisright_parenthesis')}.
+#' @param data A character string specifying a data.frame object holding 
+#' the data to be analysed under the specified model. 
+#' @param mu.fix Logical, indicating whether the mu parameter should be kept fixed
+#' in the fitting processes. Default \code{mu.fix=FALSE}.
+#' @param sigma.fix Logical, indicating whether the sigma parameter should be kept
+#' fixed in the fitting processes. Default \code{sigma.fix=FALSE}.
+#' @param nu.fix Logical, indicating whether the nu parameter should be kept fixed 
+#' in the fitting processes. Default \code{nu.fix=FALSE}.
+#' @param tau.fix Logical, indicating whether the tau parameter should be kept fixed
+#' in the fitting processes. Default \code{tau.fix=FALSE}.
+#' @param global.mean Numeric value, giving the global mean of the outcome variable,
+#' which is necessary to initialize the distribution parameters for some families.
+#' Otherwise \code{global.mean=NULL}.
+#' @param global.sd Numeric value, giving the global sd of the outcome variable
+#' which is necessary to initialize the distribution parameters for some families.
+#' Otherwise \code{global.sd=NULL}.
+#' @param control This sets the control parameters of the outer iterations algorithm 
+#' using the gamlss.control function. This is a comma-separated string of 7 numeric values: 
+#' (i) c.crit (the convergence criterion for the algorithm), (ii) n.cyc (the number of cycles of 
 #' the algorithm), (iii) mu.step (the step length for the parameter mu), (iv) sigma.step 
 #' (the step length for the parameter sigma), (v) nu.step (the step length for the
 #' parameter nu), (vi) tau.step (the step length for the parameter tau), (vii) gd.tol
 #' (global deviance tolerance level). The default values for these 7 parameters are 
-#' set to c(0.001, 20, 1, 1, 1, 1, Inf).
-#' @param i.control this sets the control parameters of the inner iterations of the 
-#' RS algorithm using the glim.control function. This is a vector of 4 numeric values: 
+#' set to \code{control='0.001,20,1,1,1,1,Inf'}.
+#' @param i.control This sets the control parameters of the inner iterations of the 
+#' RS algorithm using the glim.control function. This is a comma-separated string of 4 numeric values: 
 #' (i) cc (the convergence criterion for the algorithm), (ii) cyc (the number of 
 #' cycles of the algorithm), (iii) bf.cyc (the number of cycles of the backfitting 
 #' algorithm), (iv) bf.tol (the convergence criterion (tolerance level) for the 
 #' backfitting algorithm). The default values for these 4 parameters are set to 
-#' c(0.001, 50, 30, 0.001).
-#' @param autostep logical, indicating whether the steps should be halved automatically 
+#' \code{i.control='0.001,50,30,0.001'}.
+#' @param autostep Logical, indicating whether the steps should be halved automatically 
 #' if the new global deviance is greater than the old one. The default is \code{autostep=TRUE}.
-#' @return a gamlss object with all components as in the native R gamlss function. 
-#' Individual-level information like the components y (the response response) and 
-#' residuals (the normalised quantile residuals of the model) are not disclosed to 
-#' the client-side.
+#' @return A list with the following elements.
+#' \describe{
+#'  \item{\code{mod.gamlss.ds}}{A \code{gamlss} object with all components as in the native R \code{\link[gamlss]{gamlss}}
+#'  function. Individual-level information like the components \code{y} (the response) and \code{residuals} (the normalised
+#'  quantile residuals of the model) are not disclosed to the client-side.}
+#'  \item{\code{G.dev}}{Numeric value for the initial deviance on the server.}
+#'  \item{\code{dim.mu.x}}{Numeric vector with two elements, specifying the dimension of the design matrix for mu.}
+#'  \item{\code{dim.sigma.x}}{Numeric vector with two elements, specifying the dimension of the design matrix for sigma.}
+#'  \item{\code{dim.nu.x}}{Numeric vector with two elements, specifying the dimension of the design matrix for nu.}
+#'  \item{\code{dim.tau.x}}{Numeric vector with two elements, specifying the dimension of the design matrix for tau.}
+#'  \item{\code{smoother.names}}{String vector with the unique variable names that are used for smoothing.}
+#'  \item{\code{smoother.xmin}}{Numeric vector with anononymized minima for the variables in \code{smoother.names}.}
+#'  \item{\code{smoother.xmax}}{Numeric vector with anononymized maxima for the variables in \code{smoother.names}.}
+#'  \item{\code{y.invalid}}{Numeric value, either \code{0} or \code{1}, whereby \code{1} indicates a disclosure risk in the response variable.}
+#'  \item{\code{mu.par.invalid}}{Numeric vector with elements \code{0} or \code{1}, whereby \code{1} indicates a disclosure risk in the corresponding
+#'  explanatory variable for mu.}
+#'  \item{\code{sigma.par.invalid}}{Numeric vector with elements \code{0} or \code{1}, whereby \code{1} indicates a disclosure risk in the corresponding
+#'  explanatory variable for sigma.}
+#'  \item{\code{nu.par.invalid}}{Numeric vector with elements \code{0} or \code{1}, whereby \code{1} indicates a disclosure risk in the corresponding
+#'  explanatory variable for nu.}
+#'  \item{\code{tau.par.invalid}}{Numeric vector with elements \code{0} or \code{1}, whereby \code{1} indicates a disclosure risk in the corresponding
+#'  explanatory variable for tau.}
+#'  \item{\code{gamlss.saturation.invalid}}{Numeric value, either \code{0} or \code{1}, whereby \code{1} indicates a disclosure risk from an oversaturated model.}
+#'  \item{\code{errorMessage}}{String for the disclosure risk. \code{errorMessage='Study data or applied model invalid for this source'} indicates a
+#'  disclosure risk, whereas \code{errorMessage='No errors'} means that no disclosure risk was identified.}
+#' }
 #' @author Annika Swenne
 #' @import gamlss
 #' @import gamlss.dist
@@ -406,11 +435,11 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   }
 
   #*B) Invalid y, mu.x, sigma.x, nu.x or tau.x ----
-  # If y, X or w data are invalid but user has modified clientside
+  # If y, X or w data are invalid but user has modified client-side
   # function (ds.gamlss) to circumvent trap, model will get to this point without
   # giving a controlled shut down with a warning about invalid data.
   # So as a safety measure, we will now use the same test that is used to
-  # trigger a controlled trap in the clientside function to destroy the
+  # trigger a controlled trap in the client-side function to destroy the
   # score.vector and information.matrix in the study with the problem.
 
   ## check y vector validity

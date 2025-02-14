@@ -17,64 +17,69 @@ gamlssDS2(
 )
 }
 \arguments{
-\item{parameter}{a string specifing for which of the model parameters "mu", "sigma", "nu"
-or "tau" the model fitting should be performed}
+\item{parameter}{A string specifing for which of the distribution parameters \code{c('mu', 'sigma', 'nu', 'tau')}
+the model fitting should be performed.}
 
-\item{family}{a gamlss.family object, which is used to define the distribution 
-and the link functions of the various parameters. The distribution families 
-supported by gamlss() can be found in gamlss.family. Functions such as BI() 
-(binomial) produce a family object. Also can be given without the parentheses
-i.e. BI. Family functions can take arguments, as in BI(mu.link=probit).}
+\item{family}{A family string in the legal transmission format for DataSHIELD, which
+is used to define the distribution of the response variable. The DataSHIELD legal transmission
+format means that special characters, like '(' are replaced with the corresponding verbal
+descriptions, e.g. 'left_parenthesis'. Currently, only the following families are supported:
+\code{family=c('NOleft_parenthesisright_parenthesis', 'NO2left_parenthesisright_parenthesis', 
+'BCCGleft_parenthesisright_parenthesis', 'BCPEleft_parenthesisright_parenthesis')}.}
 
-\item{data}{an optional character string specifying a data.frame object holding 
-the data to be analysed under the specified model}
+\item{data}{A character string specifying a data.frame object holding 
+the data to be analysed under the specified model.}
 
-\item{mu.beta.vect}{a numeric vector created by the clientside function specifying the
+\item{mu.beta.vect}{A comma-separated string created by the client-side function specifying the
 vector of regression coefficients for mu at the current iteration.}
 
-\item{sigma.beta.vect}{a numeric vector created by the clientside function specifying the
+\item{sigma.beta.vect}{A comma-separated string created by the client-side function specifying the
 vector of regression coefficients for sigma at the current iteration.}
 
-\item{nu.beta.vect}{a numeric vector created by the clientside function specifying the
+\item{nu.beta.vect}{A comma-separated string created by the client-side function specifying the
 vector of regression coefficients for nu at the current iteration.}
 
-\item{tau.beta.vect}{a numeric vector created by the clientside function specifying the
+\item{tau.beta.vect}{A comma-separated string created by the client-side function specifying the
 vector of regression coefficients for tau at the current iteration.}
 
-\item{control}{this sets the control parameters of the outer iterations algorithm 
-using the gamlss.control function. This is a vector of 7 numeric values: (i) c.crit 
-(the convergence criterion for the algorithm), (ii) n.cyc (the number of cycles of 
+\item{control}{This sets the control parameters of the outer iterations algorithm 
+using the gamlss.control function. This is a comma-separated string of 7 numeric values: 
+(i) c.crit (the convergence criterion for the algorithm), (ii) n.cyc (the number of cycles of 
 the algorithm), (iii) mu.step (the step length for the parameter mu), (iv) sigma.step 
 (the step length for the parameter sigma), (v) nu.step (the step length for the
 parameter nu), (vi) tau.step (the step length for the parameter tau), (vii) gd.tol
 (global deviance tolerance level). The default values for these 7 parameters are 
-set to c(0.001, 20, 1, 1, 1, 1, Inf).}
+set to \code{control='0.001,20,1,1,1,1,Inf'}.}
 
-\item{i.control}{this sets the control parameters of the inner iterations of the 
-RS algorithm using the glim.control function. This is a vector of 4 numeric values: 
+\item{i.control}{This sets the control parameters of the inner iterations of the 
+RS algorithm using the glim.control function. This is a comma-separated string of 4 numeric values: 
 (i) cc (the convergence criterion for the algorithm), (ii) cyc (the number of 
 cycles of the algorithm), (iii) bf.cyc (the number of cycles of the backfitting 
 algorithm), (iv) bf.tol (the convergence criterion (tolerance level) for the 
 backfitting algorithm). The default values for these 4 parameters are set to 
-c(0.001, 50, 30, 0.001).}
+\code{i.control='0.001,50,30,0.001'}.}
 }
 \value{
-a gamlss object with all components as in the native R gamlss function. 
-Individual-level information like the components y (the response response) and 
-residuals (the normalised quantile residuals of the model) are not disclosed to 
-the client-side.
+A list with the following elements.
+\describe{
+ \item{\code{matrix}}{Numeric matrix that can be aggregated on the client-side to obtain the updated weighted least squares estimator for the distribution parameter.}
+ \item{\code{vector}}{Numeric vector that can be aggregated on the client-side to obtain the updated weighted least squares estimator for the distribution parameter.}
+ \item{\code{dv}}{Numeric value for the new deviance on the server.}
+ \item{\code{disclosure.risk}}{Numeric value, either \code{0} or \code{1}, whereby \code{1} indicates a disclosure risk.}
+ \item{\code{errorMessage2}}{String for the disclosure risk. \code{errorMessage='No errors'} means that no disclosure risk was identified.}
+}
 }
 \description{
-This is the second serverside aggregate function called by ds.gamlss.
+This is the second server-side aggregate function called by \code{\link[dsGamlssClient]{ds.gamlss}}.
 }
 \details{
 It is an aggregation function that uses the model structure and starting
-parameter vectors constructed by gamlssDS1 to iteratively obtain the WLSE for beta.
-The function gamlssDS2 also carries out a series of disclosure checks and if
+parameter vectors constructed by \code{gamlssDS1} to iteratively obtain the weighted least squares estimator for beta.
+The function \code{gamlssDS2} also carries out a series of disclosure checks and if
 the arguments or data fail any of those tests, model construction is blocked and an 
-appropriate serverside error message is created and returned to ds.gamlss on the 
-clientside. For more details please see the extensive header of ds.gamlss and also the
-gamlss function in native R gamlss package.
+appropriate server-side error message is created and returned to \code{\link[dsGamlssClient]{ds.gamlss}} on the 
+client-side. This function is not intended for direct use by the user. For more details 
+please see the extensive header of \code{\link[dsGamlssClient]{ds.gamlss}}.
 }
 \author{
 Annika Swenne

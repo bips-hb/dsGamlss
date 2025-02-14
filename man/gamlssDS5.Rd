@@ -24,80 +24,82 @@ gamlssDS5(
 )
 }
 \arguments{
-\item{parameter}{a string specifing for which of the model parameters "mu", "sigma", "nu"
-or "tau" the model fitting should be performed}
+\item{parameter}{A string specifying for which of the distribution parameters \code{c('mu', 'sigma', 'nu', 'tau')}
+the model fitting should be performed.}
 
-\item{family}{a gamlss.family object, which is used to define the distribution 
-and the link functions of the various parameters. The distribution families 
-supported by gamlss() can be found in gamlss.family. Functions such as BI() 
-(binomial) produce a family object. Also can be given without the parentheses
-i.e. BI. Family functions can take arguments, as in BI(mu.link=probit).}
+\item{family}{A family string in the legal transmission format for DataSHIELD, which
+is used to define the distribution of the response variable. The DataSHIELD legal transmission
+format means that special characters, like '(' are replaced with the corresponding verbal
+descriptions, e.g. 'left_parenthesis'. Currently, only the following families are supported:
+\code{family=c('NOleft_parenthesisright_parenthesis', 'NO2left_parenthesisright_parenthesis', 
+'BCCGleft_parenthesisright_parenthesis', 'BCPEleft_parenthesisright_parenthesis')}.}
 
-\item{data}{an optional character string specifying a data.frame object holding 
-the data to be analysed under the specified model}
+\item{data}{A character string specifying a data.frame object holding 
+the data to be analysed under the specified model.}
 
-\item{mu.beta.vect}{a numeric vector created by the clientside function specifying the
+\item{mu.beta.vect}{A comma-separated string created by the client-side function specifying the
 vector of regression coefficients for mu at the current iteration.}
 
-\item{sigma.beta.vect}{a numeric vector created by the clientside function specifying the
+\item{sigma.beta.vect}{A comma-separated string created by the client-side function specifying the
 vector of regression coefficients for sigma at the current iteration.}
 
-\item{nu.beta.vect}{a numeric vector created by the clientside function specifying the
+\item{nu.beta.vect}{A comma-separated string created by the client-side function specifying the
 vector of regression coefficients for nu at the current iteration.}
 
-\item{tau.beta.vect}{a numeric vector created by the clientside function specifying the
+\item{tau.beta.vect}{A comma-separated string created by the client-side function specifying the
 vector of regression coefficients for tau at the current iteration.}
 
-\item{mu.gamma.vect}{a numeric vector created by the clientside function specifying the
+\item{mu.gamma.vect}{A comma-separated string created by the client-side function specifying the
 vector of smoothing regression coefficients for mu at the current iteration.}
 
-\item{sigma.gamma.vect}{a numeric vector created by the clientside function specifying the
+\item{sigma.gamma.vect}{A comma-separated string created by the client-side function specifying the
 vector of smoothing regression coefficients for sigma at the current iteration.}
 
-\item{nu.gamma.vect}{a numeric vector created by the clientside function specifying the
+\item{nu.gamma.vect}{A comma-separated string created by the client-side function specifying the
 vector of smoothing regression coefficients for nu at the current iteration.}
 
-\item{tau.gamma.vect}{a numeric vector created by the clientside function specifying the
+\item{tau.gamma.vect}{A comma-separated string created by the client-side function specifying the
 vector of smoothing regression coefficients for tau at the current iteration.}
 
-\item{smoother.names}{a character vector specifying the unique variable names for the smoother.}
+\item{smoother.names}{A string vector specifying the unique variable names for the smoother.}
 
-\item{smoother.xl}{a numeric vector created by the clientside function specifying the left
-boundary for the knots for the pb-smoother.}
+\item{smoother.xl}{A comma-separated string created by the client-side function specifying the left
+boundary for the knots for the smoother in \code{smoother.names}.}
 
-\item{smoother.xr}{a numeric vector created by the clientside function specifying the right
-boundary for the knots for the pb-smoother.}
+\item{smoother.xr}{A comma-separated string created by the client-side function specifying the right
+boundary for the knots for the smoother in \code{smoother.names}.}
 
-\item{control}{this sets the control parameters of the outer iterations algorithm 
-using the gamlss.control function. This is a vector of 7 numeric values: (i) c.crit 
-(the convergence criterion for the algorithm), (ii) n.cyc (the number of cycles of 
+\item{control}{This sets the control parameters of the outer iterations algorithm 
+using the gamlss.control function. This is a comma-separated string of 7 numeric values: 
+(i) c.crit (the convergence criterion for the algorithm), (ii) n.cyc (the number of cycles of 
 the algorithm), (iii) mu.step (the step length for the parameter mu), (iv) sigma.step 
 (the step length for the parameter sigma), (v) nu.step (the step length for the
 parameter nu), (vi) tau.step (the step length for the parameter tau), (vii) gd.tol
 (global deviance tolerance level). The default values for these 7 parameters are 
-set to c(0.001, 20, 1, 1, 1, 1, Inf).}
+set to \code{control='0.001,20,1,1,1,1,Inf'}.}
 
-\item{i.control}{this sets the control parameters of the inner iterations of the 
-RS algorithm using the glim.control function. This is a vector of 4 numeric values: 
+\item{i.control}{This sets the control parameters of the inner iterations of the 
+RS algorithm using the glim.control function. This is a comma-separated string of 4 numeric values: 
 (i) cc (the convergence criterion for the algorithm), (ii) cyc (the number of 
 cycles of the algorithm), (iii) bf.cyc (the number of cycles of the backfitting 
 algorithm), (iv) bf.tol (the convergence criterion (tolerance level) for the 
 backfitting algorithm). The default values for these 4 parameters are set to 
-c(0.001, 50, 30, 0.001).}
+\code{i.control='0.001,50,30,0.001'}.}
 }
 \value{
-a gamlss object with all components as in the native R gamlss function. 
-Individual-level information like the components y (the response response) and 
-residuals (the normalised quantile residuals of the model) are not disclosed to 
-the client-side.
+A list with the following elements.
+\describe{
+ \item{\code{sumofsquares}}{Numeric value for the sum of squares for the old and new smoothing fitted values. This is needed on the client-side to determine the stopping criterion for backfitting.}
+ \item{\code{sumofweights}}{Numeric value for the sum of weights. This is needed on the client-side to determine the stopping criterion for backfitting.}
+ \item{\code{sumofsmoothers}}{Numeric value for the wieghted sum of the new smoothing fitted values. This is needed on the client-side to determine the stopping criterion for backfitting.}
+}
 }
 \description{
-This is the fifth serverside aggregate function called by ds.gamlss.
+This is the fifth server-side aggregate function called by \code{\link[dsGamlssClient]{ds.gamlss}}.
 }
 \details{
 It is an aggregation function that checks whether the backfitting iteration converged.
-For more details please see the extensive header of ds.gamlss and also the
-gamlss function in native R gamlss package.
+This function is not intended for direct use by the user. For more details please see the extensive header of \code{\link[dsGamlssClient]{ds.gamlss}}.
 }
 \author{
 Annika Swenne

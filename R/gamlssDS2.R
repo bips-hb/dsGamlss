@@ -1,49 +1,54 @@
 #'
 #' @title gamlssDS2 called by ds.gamlss
-#' @description This is the second serverside aggregate function called by ds.gamlss.
+#' @description This is the second server-side aggregate function called by \code{\link[dsGamlssClient]{ds.gamlss}}.
 #' @details It is an aggregation function that uses the model structure and starting
-#' parameter vectors constructed by gamlssDS1 to iteratively obtain the WLSE for beta.
-#' The function gamlssDS2 also carries out a series of disclosure checks and if
+#' parameter vectors constructed by \code{gamlssDS1} to iteratively obtain the weighted least squares estimator for beta.
+#' The function \code{gamlssDS2} also carries out a series of disclosure checks and if
 #' the arguments or data fail any of those tests, model construction is blocked and an 
-#' appropriate serverside error message is created and returned to ds.gamlss on the 
-#' clientside. For more details please see the extensive header of ds.gamlss and also the
-#' gamlss function in native R gamlss package.
-#' @param parameter a string specifing for which of the model parameters "mu", "sigma", "nu"
-#' or "tau" the model fitting should be performed
-#' @param family a gamlss.family object, which is used to define the distribution 
-#' and the link functions of the various parameters. The distribution families 
-#' supported by gamlss() can be found in gamlss.family. Functions such as BI() 
-#' (binomial) produce a family object. Also can be given without the parentheses
-#' i.e. BI. Family functions can take arguments, as in BI(mu.link=probit).
-#' @param data an optional character string specifying a data.frame object holding 
-#' the data to be analysed under the specified model 
-#' @param mu.beta.vect a numeric vector created by the clientside function specifying the
+#' appropriate server-side error message is created and returned to \code{\link[dsGamlssClient]{ds.gamlss}} on the 
+#' client-side. This function is not intended for direct use by the user. For more details 
+#' please see the extensive header of \code{\link[dsGamlssClient]{ds.gamlss}}.
+#' @param parameter A string specifing for which of the distribution parameters \code{c('mu', 'sigma', 'nu', 'tau')}
+#' the model fitting should be performed.
+#' @param family A family string in the legal transmission format for DataSHIELD, which
+#' is used to define the distribution of the response variable. The DataSHIELD legal transmission
+#' format means that special characters, like '(' are replaced with the corresponding verbal
+#' descriptions, e.g. 'left_parenthesis'. Currently, only the following families are supported:
+#' \code{family=c('NOleft_parenthesisright_parenthesis', 'NO2left_parenthesisright_parenthesis', 
+#' 'BCCGleft_parenthesisright_parenthesis', 'BCPEleft_parenthesisright_parenthesis')}.
+#' @param data A character string specifying a data.frame object holding 
+#' the data to be analysed under the specified model. 
+#' @param mu.beta.vect A comma-separated string created by the client-side function specifying the
 #' vector of regression coefficients for mu at the current iteration.
-#' @param sigma.beta.vect a numeric vector created by the clientside function specifying the
+#' @param sigma.beta.vect A comma-separated string created by the client-side function specifying the
 #' vector of regression coefficients for sigma at the current iteration.
-#' @param nu.beta.vect a numeric vector created by the clientside function specifying the
+#' @param nu.beta.vect A comma-separated string created by the client-side function specifying the
 #' vector of regression coefficients for nu at the current iteration.
-#' @param tau.beta.vect a numeric vector created by the clientside function specifying the
+#' @param tau.beta.vect A comma-separated string created by the client-side function specifying the
 #' vector of regression coefficients for tau at the current iteration.
-#' @param control this sets the control parameters of the outer iterations algorithm 
-#' using the gamlss.control function. This is a vector of 7 numeric values: (i) c.crit 
-#' (the convergence criterion for the algorithm), (ii) n.cyc (the number of cycles of 
+#' @param control This sets the control parameters of the outer iterations algorithm 
+#' using the gamlss.control function. This is a comma-separated string of 7 numeric values: 
+#' (i) c.crit (the convergence criterion for the algorithm), (ii) n.cyc (the number of cycles of 
 #' the algorithm), (iii) mu.step (the step length for the parameter mu), (iv) sigma.step 
 #' (the step length for the parameter sigma), (v) nu.step (the step length for the
 #' parameter nu), (vi) tau.step (the step length for the parameter tau), (vii) gd.tol
 #' (global deviance tolerance level). The default values for these 7 parameters are 
-#' set to c(0.001, 20, 1, 1, 1, 1, Inf).
-#' @param i.control this sets the control parameters of the inner iterations of the 
-#' RS algorithm using the glim.control function. This is a vector of 4 numeric values: 
+#' set to \code{control='0.001,20,1,1,1,1,Inf'}.
+#' @param i.control This sets the control parameters of the inner iterations of the 
+#' RS algorithm using the glim.control function. This is a comma-separated string of 4 numeric values: 
 #' (i) cc (the convergence criterion for the algorithm), (ii) cyc (the number of 
 #' cycles of the algorithm), (iii) bf.cyc (the number of cycles of the backfitting 
 #' algorithm), (iv) bf.tol (the convergence criterion (tolerance level) for the 
 #' backfitting algorithm). The default values for these 4 parameters are set to 
-#' c(0.001, 50, 30, 0.001).
-#' @return a gamlss object with all components as in the native R gamlss function. 
-#' Individual-level information like the components y (the response response) and 
-#' residuals (the normalised quantile residuals of the model) are not disclosed to 
-#' the client-side.
+#' \code{i.control='0.001,50,30,0.001'}.
+#' @return A list with the following elements.
+#' \describe{
+#'  \item{\code{matrix}}{Numeric matrix that can be aggregated on the client-side to obtain the updated weighted least squares estimator for the distribution parameter.}
+#'  \item{\code{vector}}{Numeric vector that can be aggregated on the client-side to obtain the updated weighted least squares estimator for the distribution parameter.}
+#'  \item{\code{dv}}{Numeric value for the new deviance on the server.}
+#'  \item{\code{disclosure.risk}}{Numeric value, either \code{0} or \code{1}, whereby \code{1} indicates a disclosure risk.}
+#'  \item{\code{errorMessage2}}{String for the disclosure risk. \code{errorMessage='No errors'} means that no disclosure risk was identified.}
+#' }
 #' @author Annika Swenne
 #' @import gamlss.dist
 #' @export
@@ -233,11 +238,11 @@ gamlssDS2 <- function(parameter = parameter, family = family,
   
   #**************************************************************************
   # III) Backup disclosure risk----
-  # If y, X or w data are invalid but user has modified clientside
+  # If y, X or w data are invalid but user has modified client-side
   # function (ds.gamlss) to circumvent trap, model will get to this point without
   # giving a controlled shut down with a warning about invalid data.
   # So as a safety measure, we will now use the same test that is used to
-  # trigger a controlled trap in the clientside function to destroy the
+  # trigger a controlled trap in the client-side function to destroy the
   # vector and matrix in the study with the problem.
   # So this will make model fail without explanation
   
@@ -304,11 +309,11 @@ gamlssDS2 <- function(parameter = parameter, family = family,
   }
   
   #*B) Invalid y, mu.x, sigma.x, nu.x or tau.x ----
-  # If y, X or w data are invalid but user has modified clientside
+  # If y, X or w data are invalid but user has modified client-side
   # function (ds.gamlss) to circumvent trap, model will get to this point without
   # giving a controlled shut down with a warning about invalid data.
   # So as a safety measure, we will now use the same test that is used to
-  # trigger a controlled trap in the clientside function to destroy the
+  # trigger a controlled trap in the client-side function to destroy the
   # vector and matrix in the study with the problem.
   
   ## check y vector validity
