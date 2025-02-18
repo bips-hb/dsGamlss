@@ -192,7 +192,11 @@ gamlssDS4 <- function(parameter = parameter, smoother = smoother, family = famil
       # no control parameters specified - use default
       pb.control <- eval(parse(text = "pb.control()"))
     }
-    x <- eval(parse(text = name), envir = parent.frame())
+    if (grepl("\\$", name, perl=TRUE)){
+      x <- eval(parse(text = name), envir = parent.frame())
+    } else {
+      x <- eval(parse(text = paste0(dataname, "$", name)), envir = parent.frame())
+    }
     basismatrix <- bbase(
       x = x, xl = smoother.xl[which(smoother.names == name)], xr = smoother.xr[which(smoother.names == name)],
       ndx = pb.control$inter, deg = pb.control$degree

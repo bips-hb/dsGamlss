@@ -311,7 +311,11 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
     smoother.xmin <- rep(NA, length(smoother.names))
     smoother.xmax <- rep(NA, length(smoother.names))
     for (i in 1:length(smoother.names)) {
-      x <- eval(parse(text = smoother.names[i]), envir = parent.frame())
+      smoother.name <- smoother.names[i]
+      if (!grepl("\\$", smoother.name, perl=TRUE)){
+        smoother.name <- paste0(data, "$", smoother.name)
+      }
+      x <- eval(parse(text = smoother.name), envir = parent.frame())
       # the study-specific seed for random number generation
       seed <- getOption("datashield.seed")
       if (is.null(seed)) {

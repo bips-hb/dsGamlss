@@ -91,7 +91,6 @@ gamlssDS6 <- function(parameter = parameter, family = family, data = data,
   } else {
     data <- eval(parse(text = dataname), envir = parent.frame())
   }
-  Ntotal <- dim(data)[1]
 
   family <- gsub("left_parenthesis", "(", family, fixed = TRUE)
   family <- gsub("right_parenthesis", ")", family, fixed = TRUE)
@@ -185,6 +184,7 @@ gamlssDS6 <- function(parameter = parameter, family = family, data = data,
   ## get design matrix for the parameter
   X.mat <- as.matrix(eval(parse(text = paste("mod.gamlss.ds$", parameter, ".x", sep = "")), envir = environment()))
   y <- as.vector(mod.gamlss.ds$y)
+  Ntotal <- mod.gamlss.ds$N
 
   ## get design matrix for the smoothers
   # get the control parameters for the smoothers
@@ -205,7 +205,11 @@ gamlssDS6 <- function(parameter = parameter, family = family, data = data,
         # no control parameters specified - use default
         pb.control <- eval(parse(text = "pb.control()"))
       }
-      x <- eval(parse(text = name), envir = parent.frame())
+      if (grepl("\\$", name, perl=TRUE)){
+        x <- eval(parse(text = name), envir = parent.frame())
+      } else {
+        x <- eval(parse(text = paste0(dataname, "$", name)), envir = parent.frame())
+      }
       basismatrix <- bbase(
         x = x, xl = smoother.xl[which(smoother.names == name)], xr = smoother.xr[which(smoother.names == name)],
         ndx = pb.control$inter, deg = pb.control$degree

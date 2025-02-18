@@ -192,7 +192,11 @@ gamlssDS5 <- function(parameter = parameter, family = family, data = data,
     # no control parameters specified - use default
     pb.control <- eval(parse(text = "pb.control()"))
   }
-  x <- eval(parse(text = name), envir = parent.frame())
+  if (grepl("\\$", name, perl=TRUE)){
+    x <- eval(parse(text = name), envir = parent.frame())
+  } else {
+    x <- eval(parse(text = paste0(dataname, "$", name)), envir = parent.frame())
+  }
   Z.mat.old <- bbase(
     x = x, xl = smoother.xl[which(smoother.names == name)], xr = smoother.xr[which(smoother.names == name)],
     ndx = pb.control$inter, deg = pb.control$degree
