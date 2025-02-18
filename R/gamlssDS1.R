@@ -184,7 +184,7 @@ gamlssDS1 <- function(formula = formula, sigma.formula = sigma.formula, nu.formu
   mod.gamlss.ds <- base::suppressWarnings(gamlss::gamlss(
     formula = formula2use, sigma.formula = sigma.formula2use,
     nu.formula = nu.formula2use, tau.formula = tau.formula2use,
-    family = family, data = dataTable,
+    family = family, data = stats::na.omit(dataTable),
     mu.fix = mu.fix, sigma.fix = sigma.fix, nu.fix = nu.fix,
     tau.fix = tau.fix,
     control = gamlss::gamlss.control(
