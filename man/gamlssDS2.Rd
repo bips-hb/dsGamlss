@@ -43,7 +43,7 @@ vector of regression coefficients for nu at the current iteration.}
 vector of regression coefficients for tau at the current iteration.}
 
 \item{control}{This sets the control parameters of the outer iterations algorithm
-using the gamlss.control function. This is a comma-separated string of 7 numeric values:
+using the \code{\link[gamlss]{gamlss.control}} function. This is a comma-separated string of 7 numeric values:
 (i) c.crit (the convergence criterion for the algorithm), (ii) n.cyc (the number of cycles of
 the algorithm), (iii) mu.step (the step length for the parameter mu), (iv) sigma.step
 (the step length for the parameter sigma), (v) nu.step (the step length for the
@@ -52,7 +52,7 @@ parameter nu), (vi) tau.step (the step length for the parameter tau), (vii) gd.t
 set to \code{control='0.001,20,1,1,1,1,Inf'}.}
 
 \item{i.control}{This sets the control parameters of the inner iterations of the
-RS algorithm using the glim.control function. This is a comma-separated string of 4 numeric values:
+RS algorithm using the \code{\link[gamlss]{glim.control}} function. This is a comma-separated string of 4 numeric values:
 (i) cc (the convergence criterion for the algorithm), (ii) cyc (the number of
 cycles of the algorithm), (iii) bf.cyc (the number of cycles of the backfitting
 algorithm), (iv) bf.tol (the convergence criterion (tolerance level) for the
