@@ -91,6 +91,7 @@ gamlssDS6 <- function(parameter = parameter, family = family, data = data,
   } else {
     data <- eval(parse(text = dataname), envir = parent.frame())
   }
+  Ntotal <- dim(data)[1]
 
   family <- gsub("left_parenthesis", "(", family, fixed = TRUE)
   family <- gsub("right_parenthesis", ")", family, fixed = TRUE)
@@ -184,7 +185,6 @@ gamlssDS6 <- function(parameter = parameter, family = family, data = data,
   ## get design matrix for the parameter
   X.mat <- as.matrix(eval(parse(text = paste("mod.gamlss.ds$", parameter, ".x", sep = "")), envir = environment()))
   y <- as.vector(mod.gamlss.ds$y)
-  Ntotal <- mod.gamlss.ds$N
 
   ## get design matrix for the smoothers
   # get the control parameters for the smoothers
