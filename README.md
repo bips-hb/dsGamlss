@@ -31,7 +31,7 @@ DataSHIELD can be obtained from the DataSHIELD
 
 ## Installation
 
-You can install the development version of `dsGamlss` from
+You can install the package `dsGamlss` from
 [GitHub](https://github.com/) with:
 
 ``` r

@@ -28,7 +28,7 @@ Detailed instructions on how to install DataSHIELD can be found at the DataSHIEL
 
 ## Installation
 
-You can install the development version of `dsGamlss` from [GitHub](https://github.com/) with:
+You can install the package `dsGamlss` from [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("devtools")
