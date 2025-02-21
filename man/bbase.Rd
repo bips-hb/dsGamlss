@@ -30,6 +30,6 @@ The function is based on the internal bbase-function defined in gamlss::pb (vers
          bbase
 }
 \author{
-Annika Swenne
+Mikis Stasinopoulos, Bob Rigby and Paul Eilers
 }
 \keyword{internal}

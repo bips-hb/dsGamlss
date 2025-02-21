@@ -12,7 +12,7 @@
 #' @param deg Degree of the polynomial.
 #' @return A B-basis matrix for p-splines.
 #' @keywords internal
-#' @author Annika Swenne
+#' @author Mikis Stasinopoulos, Bob Rigby and Paul Eilers
 
 bbase <- function(x, xl, xr, ndx = 20, deg = 3) {
   #**************************************************************************
