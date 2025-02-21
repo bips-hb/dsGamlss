@@ -16,28 +16,36 @@ and the [dsBase](https://github.com/datashield/dsBase) package \[2\].
 ### DataSHIELD
 
 DataSHIELD is a software infrastructure which allows you to do
-non-disclosive federated analysis on sensitive data. The
-[DataSHIELD](https://www.datashield.org) website has in depth
-descriptions of what it is, how it works and how to install it. A key
-point to highlight is that DataSHIELD has a client-server
-infrastructure, so the `dsGamlss` package needs to be used in
-conjunction with the
+non-disclosive federated analysis on sensitive data. The [DataSHIELD
+website](https://www.datashield.org) has in depth descriptions of what
+it is, how it works and how to install it. A key point to highlight is
+that DataSHIELD has a client-server infrastructure, so the `dsGamlss`
+package needs to be used in conjunction with the
 [dsGamlssClient](https://github.com/bips-hb/dsGamlssClient) package -
 trying to use one without the other makes no sense. Detailed
-instructions on how to install DataSHIELD can be found at the DataSHIELD
-[Wiki](https://www.datashield.org/wiki). Discussion and help with using
-DataSHIELD can be obtained from the DataSHIELD
-[Forum](https://datashield.discourse.group/)
+instructions on how to install DataSHIELD can be found at the
+[DataSHIELD Wiki](https://www.datashield.org/wiki). Discussion and help
+with using DataSHIELD can be obtained from the [DataSHIELD
+Forum](https://datashield.discourse.group/)
 
 ## Installation
 
-You can install the package `dsGamlss` from
+In principle, you can install the `dsGamlss` package from
 [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("devtools")
 devtools::install_github("bips-hb/dsGamlss")
 ```
+
+But most likely, you need to install the `dsGamlss` package on a
+DataSHIELD server. Instructions on how to install a package on a
+DataSHIELD server for different types of DataSHIELD servers
+([Armadillo](https://molgenis.github.io/molgenis-service-armadillo/) or
+[Opal](https://opaldoc.obiba.org/en/latest/)) can be found in the [Data
+Manager
+Section](https://wiki.datashield.org/en/getting-started/data-manager/overview)
+at the DataSHIELD Wiki.
 
 ## Example
 
