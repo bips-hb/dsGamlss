@@ -4,6 +4,8 @@
 # dsGamlss
 
 <!-- badges: start -->
+
+[![R-CMD-check](https://github.com/bips-hb/dsGamlss/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/bips-hb/dsGamlss/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 The `dsGamlss` package is a [DataSHIELD](https://www.datashield.org)
