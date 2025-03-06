@@ -12,6 +12,7 @@ DataSHIELD server-side functions to fit Generalized Additive Models for Location
 Useful links:
 \itemize{
   \item \url{https://github.com/bips-hb/dsGamlss}
+  \item \url{https://bips-hb.github.io/dsGamlss/}
   \item Report bugs at \url{https://github.com/bips-hb/dsGamlss/issues}
 }
 
