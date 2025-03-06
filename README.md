@@ -30,22 +30,24 @@ Forum](https://datashield.discourse.group/)
 
 ## Installation
 
-In principle, you can install the `dsGamlss` package from
-[GitHub](https://github.com/) with:
+If you want to use the sever-less DataSHIELD implementation
+[DSLite](https://cran.r-project.org/package=DSLite) \[3\], that is used
+in the example, you can install the `dsGamlss` package on your local
+machine from [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("devtools")
 devtools::install_github("bips-hb/dsGamlss")
 ```
 
-But most likely, you need to install the `dsGamlss` package on a
-DataSHIELD server. Instructions on how to install a package on a
-DataSHIELD server for different types of DataSHIELD servers
-([Armadillo](https://molgenis.github.io/molgenis-service-armadillo/) or
-[Opal](https://opaldoc.obiba.org/en/latest/)) can be found in the [Data
-Manager
+If you are working with real
+[Armadillo](https://molgenis.github.io/molgenis-service-armadillo/) or
+[Opal](https://opaldoc.obiba.org/en/latest/) DataSHIELD servers, the
+`dsGamlss` package must be installed on the DataSHIELD servers instead.
+Instructions on how to install a package on an Armadillo or Opal
+DataSHIELD server can be found in the [Data Manager
 Section](https://wiki.datashield.org/en/getting-started/data-manager/overview)
-at the DataSHIELD Wiki.
+at the [DataSHIELD Wiki](https://www.datashield.org/wiki).
 
 ## Example
 
@@ -63,3 +65,6 @@ examples for that.
     Series C (Applied Statistics). 2005;54(3):507-54.
 2.  DataSHIELD Developers (2023). *dsBaseClient: DataSHIELD Client
     Functions*. R package version 6.3.0.
+3.  Marcon Y (2022). *DSLite: ‘DataSHIELD’ Implementation on Local
+    Datasets*. R package version 1.4.0,
+    <https://CRAN.R-project.org/package=DSLite>.
